@@ -1,0 +1,6 @@
+[package]
+name = "rust-abci"
+version = "0.1.0"
+authors = ["Adrian Brink <adrian@brink-holdings.com>"]
+
+[dependencies]
