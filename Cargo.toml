@@ -1,6 +1,10 @@
 [package]
-name = "rust-abci"
+name = "rust_abci"
 version = "0.1.0"
 authors = ["Adrian Brink <adrian@brink-holdings.com>"]
 
 [dependencies]
+protobuf = "1.*"
+grpc = "0.*"
+futures = "0.1"
+futures-cpupool = "0.1"
