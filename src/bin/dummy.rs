@@ -1,59 +1,63 @@
 extern crate rust_abci;
 extern crate grpc;
+extern crate futures;
+extern crate futures_cpupool;
 
 use std::thread;
 
 use grpc::*;
 
+use futures_cpupool::CpuPool;
+
 use rust_abci::*;
 use rust_abci::types_grpc::*;
-use rust_abci::types::*;
+use rust_abci::types;
 
-struct DummyImpl {}
+struct DummyImpl;
 
 impl ABCIApplication for DummyImpl {
-    fn Echo(&self, o: ::grpc::GrpcRequestOptions, p: super::types::RequestEcho) -> ::grpc::GrpcSingleResponse<super::types::ResponseEcho> {
+    fn Echo(&self, o: GrpcRequestOptions, p: types::RequestEcho) -> GrpcSingleResponse<types::ResponseEcho> {
         println!("Test");
         unimplemented!();
     }
 
-    fn Flush(&self, o: ::grpc::GrpcRequestOptions, p: super::types::RequestFlush) -> ::grpc::GrpcSingleResponse<super::types::ResponseFlush> {
+    fn Flush(&self, o: GrpcRequestOptions, p: types::RequestFlush) -> GrpcSingleResponse<types::ResponseFlush> {
         unimplemented!();
     }
 
-    fn Info(&self, o: ::grpc::GrpcRequestOptions, p: super::types::RequestInfo) -> ::grpc::GrpcSingleResponse<super::types::ResponseInfo> {
+    fn Info(&self, o: GrpcRequestOptions, p: types::RequestInfo) -> GrpcSingleResponse<types::ResponseInfo> {
         unimplemented!();
     }
 
-    fn SetOption(&self, o: ::grpc::GrpcRequestOptions, p: super::types::RequestSetOption) -> ::grpc::GrpcSingleResponse<super::types::ResponseSetOption> {
+    fn SetOption(&self, o: GrpcRequestOptions, p: types::RequestSetOption) -> GrpcSingleResponse<types::ResponseSetOption> {
         unimplemented!();
     }
 
-    fn DeliverTx(&self, o: ::grpc::GrpcRequestOptions, p: super::types::RequestDeliverTx) -> ::grpc::GrpcSingleResponse<super::types::ResponseDeliverTx> {
+    fn DeliverTx(&self, o: GrpcRequestOptions, p: types::RequestDeliverTx) -> GrpcSingleResponse<types::ResponseDeliverTx> {
         unimplemented!();
     }
 
-    fn CheckTx(&self, o: ::grpc::GrpcRequestOptions, p: super::types::RequestCheckTx) -> ::grpc::GrpcSingleResponse<super::types::ResponseCheckTx> {
+    fn CheckTx(&self, o: GrpcRequestOptions, p: types::RequestCheckTx) -> GrpcSingleResponse<types::ResponseCheckTx> {
         unimplemented!();
     }
 
-    fn Query(&self, o: ::grpc::GrpcRequestOptions, p: super::types::RequestQuery) -> ::grpc::GrpcSingleResponse<super::types::ResponseQuery> {
+    fn Query(&self, o: GrpcRequestOptions, p: types::RequestQuery) -> GrpcSingleResponse<types::ResponseQuery> {
         unimplemented!();
     }
 
-    fn Commit(&self, o: ::grpc::GrpcRequestOptions, p: super::types::RequestCommit) -> ::grpc::GrpcSingleResponse<super::types::ResponseCommit> {
+    fn Commit(&self, o: GrpcRequestOptions, p: types::RequestCommit) -> GrpcSingleResponse<types::ResponseCommit> {
         unimplemented!();
     }
 
-    fn InitChain(&self, o: ::grpc::GrpcRequestOptions, p: super::types::RequestInitChain) -> ::grpc::GrpcSingleResponse<super::types::ResponseInitChain> {
+    fn InitChain(&self, o: GrpcRequestOptions, p: types::RequestInitChain) -> GrpcSingleResponse<types::ResponseInitChain> {
         unimplemented!();
     }
 
-    fn BeginBlock(&self, o: ::grpc::GrpcRequestOptions, p: super::types::RequestBeginBlock) -> ::grpc::GrpcSingleResponse<super::types::ResponseBeginBlock> {
+    fn BeginBlock(&self, o: GrpcRequestOptions, p: types::RequestBeginBlock) -> GrpcSingleResponse<types::ResponseBeginBlock> {
         unimplemented!();
     }
 
-    fn EndBlock(&self, o: ::grpc::GrpcRequestOptions, p: super::types::RequestEndBlock) -> ::grpc::GrpcSingleResponse<super::types::ResponseEndBlock> {
+    fn EndBlock(&self, o: GrpcRequestOptions, p: types::RequestEndBlock) -> GrpcSingleResponse<types::ResponseEndBlock> {
         unimplemented!();
     }
 }
@@ -65,7 +69,7 @@ fn main() {
     let lAddr = "0.0.0.0:46658";
     let connectionType = "grpc";
 
-    let _server = Server::new(lAddr, connectionType);
+    let _server = ABCIApplicationServer::new_pool("[::]:46658", Default::default(), DummyImpl, CpuPool::new(4));
 
     loop {
         thread::park();
