@@ -7,13 +7,18 @@ use rust_abci::*;
 use rust_abci::types_grpc::*;
 use rust_abci::types;
 
-struct DummyApp;
 
-unsafe impl Sync for DummyApp {}
+struct CounterApp {
+    serial: bool,
+    txCount: isize,
+    hashCount: isize,
+}
 
-unsafe impl Send for DummyApp {}
+// unsafe impl Sync for CounterApp {}
 
-impl ABCIApplication for DummyApp {
+// unsafe impl Send for CounterApp {}
+
+impl ABCIApplication for CounterApp {
     fn Echo(&self, o: ::grpc::GrpcRequestOptions, p: types::RequestEcho) -> ::grpc::GrpcSingleResponse<types::ResponseEcho> {
         println!("Echo");
         let response = types::ResponseEcho::new();
@@ -85,7 +90,13 @@ fn main() {
     let lAddr = "0.0.0.0:46658";
     let connectionType = "grpc";
 
-    let _server = NewServer(lAddr, connectionType, DummyApp);
+    let app = CounterApp {
+        serial: true,
+        txCount: 0,
+        hashCount: 0,
+    };
+    
+    let _server = NewServer(lAddr, connectionType, app);
 
     loop {
         thread::park();
