@@ -9,3 +9,4 @@ grpc = "0.*"
 futures = "0.1"
 futures-cpupool = "0.1"
 byteorder = "1.0.0"
+parity = { git = "https://github.com/paritytech/parity.git" }
