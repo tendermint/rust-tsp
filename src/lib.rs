@@ -7,6 +7,7 @@ extern crate protobuf;
 extern crate tls_api;
 extern crate websocket;
 extern crate tokio_core;
+extern crate byteorder;
 
 
 use types_grpc::ABCIApplication;

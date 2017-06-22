@@ -1,6 +1,6 @@
 use types_grpc::ABCIApplication;
 use super::Service;
-use std::net::TcpListener;
+use std::net::{TcpListener, TcpStream};
 use std::thread;
 use std::io::Read;
 use websocket::sync::Server;
@@ -31,10 +31,16 @@ pub fn new_server<H: ABCIApplication + 'static + Sync + Send + 'static>(listen_a
             match request {
                 Ok(mut stream) => {
                     // TODO: determine how long the message is based on the first byte in the buffer
+/*
                     let mut buffer = [0; 8];
                     stream.read(&mut buffer).unwrap();
                     println!("slice: {:?}", &buffer);
                     let parsed = parse_from_bytes::<Request>(&buffer).unwrap();
+                     */
+                    let message = read_abci_message(stream);
+                    let response = handle_abci_message(message, app);
+                    write_abci_message(response);
+
                 }
                 Err(e) => {
                     println!("connection failed");
@@ -45,3 +51,19 @@ pub fn new_server<H: ABCIApplication + 'static + Sync + Send + 'static>(listen_a
 
     Box::new(DummyApp{})
 }
+
+// reads the incoming stream and returns types::Request
+// callers have to determine the concrete Request by matching against it and then respond appropriately
+// and call the appropriate functions on the ABCIApplication
+fn read_abci_message(stream: &mut TcpStream) -> types::Request {
+    
+}
+
+// matches on the message and calls the appropriate functions on the app
+// the function then returns appropriate response to write into the stream
+fn handle_abci_message(message: , app: ) -> response {
+    
+}
+
+// writes a protobuf message into the TcpStream
+fn write_abci_message(stream: &mut TcpStream, response: ) 
