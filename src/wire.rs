@@ -40,7 +40,7 @@ pub fn read_varint<S: Read>(stream: &mut S) -> u64 {
 #[test]
 fn test_read_varint() {
     use std::io::Cursor;
-    let mut buf = Cursor::new()
+    let mut buf = Cursor::new();
 }
 
 #[test]

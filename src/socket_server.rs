@@ -42,21 +42,21 @@ fn read_abci_message(stream: &mut TcpStream) -> Option<Request> {
 
     let message_length: u64 = stream.read_uint::<BigEndian>(varint_length as usize).unwrap();
 
-    let mut message_bytes: Vec<u8> = Vec::with_capacity(message_length as usize);
+    let mut message_bytes: Vec<u8> = vec![0; message_length as usize];
 
     stream.read_exact(&mut message_bytes);
 
-    let message = parse_from_bytes::<Request>(&message_bytes);
+    let message = parse_from_bytes::<Request>(&message_bytes).unwrap();
 
     println!("{}", varint_length);
     println!("{}", message_length);
     println!("{:?}", &message);
-    message.ok()
+    Some(message)
 }
 
 
 fn handle_abci_message(message: Request) {
-    println!("handle_abci_message");
+    println!("handle_abci_message: {:?}", &message);
     if message.has_begin_block() {
         println!("begin_block");
     }

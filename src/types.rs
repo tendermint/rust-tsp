@@ -2440,7 +2440,7 @@ impl ::protobuf::reflect::ProtobufValue for RequestCommit {
 #[derive(PartialEq,Clone,Default)]
 pub struct RequestInitChain {
     // message fields
-    validators: ::protobuf::RepeatedField<Validator>,
+    pub validators: ::protobuf::RepeatedField<Validator>,
     // special fields
     unknown_fields: ::protobuf::UnknownFields,
     cached_size: ::protobuf::CachedSize,
@@ -2624,7 +2624,7 @@ impl ::protobuf::reflect::ProtobufValue for RequestInitChain {
 pub struct RequestBeginBlock {
     // message fields
     pub hash: ::std::vec::Vec<u8>,
-    header: ::protobuf::SingularPtrField<Header>,
+    pub header: ::protobuf::SingularPtrField<Header>,
     // special fields
     unknown_fields: ::protobuf::UnknownFields,
     cached_size: ::protobuf::CachedSize,
@@ -6568,7 +6568,7 @@ impl ::protobuf::reflect::ProtobufValue for ResponseBeginBlock {
 #[derive(PartialEq,Clone,Default)]
 pub struct ResponseEndBlock {
     // message fields
-    diffs: ::protobuf::RepeatedField<Validator>,
+    pub diffs: ::protobuf::RepeatedField<Validator>,
     // special fields
     unknown_fields: ::protobuf::UnknownFields,
     cached_size: ::protobuf::CachedSize,
@@ -6755,7 +6755,7 @@ pub struct Header {
     pub height: u64,
     pub time: u64,
     pub num_txs: u64,
-    last_block_id: ::protobuf::SingularPtrField<BlockID>,
+    pub last_block_id: ::protobuf::SingularPtrField<BlockID>,
     pub last_commit_hash: ::std::vec::Vec<u8>,
     pub data_hash: ::std::vec::Vec<u8>,
     pub validators_hash: ::std::vec::Vec<u8>,
@@ -7322,7 +7322,7 @@ impl ::protobuf::reflect::ProtobufValue for Header {
 pub struct BlockID {
     // message fields
     pub hash: ::std::vec::Vec<u8>,
-    parts: ::protobuf::SingularPtrField<PartSetHeader>,
+    pub parts: ::protobuf::SingularPtrField<PartSetHeader>,
     // special fields
     unknown_fields: ::protobuf::UnknownFields,
     cached_size: ::protobuf::CachedSize,

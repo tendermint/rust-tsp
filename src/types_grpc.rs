@@ -208,18 +208,18 @@ impl ::std::ops::Deref for ABCIApplicationServer {
 }
 
 impl ABCIApplicationServer {
-    pub fn new<A : ::std::net::ToSocketAddrs, H : ABCIApplication + 'static + Sync + Send + 'static>(addr: A, conf: ::grpc::ServerConf, h: H) -> Self {
+    pub fn new<A : ::std::net::ToSocketAddrs, H : ABCIApplication + 'static + Sync + Send + 'static>(addr: A, conf: ::grpc::ServerConf, h: H) -> ::grpc::Result<Self> {
         let service_definition = ABCIApplicationServer::new_service_def(h);
-        ABCIApplicationServer {
-            grpc_server: ::grpc::Server::new_plain(addr, conf, service_definition),
-        }
+        Ok(ABCIApplicationServer {
+            grpc_server: ::grpc::Server::new_plain(addr, conf, service_definition)?,
+        })
     }
 
-    pub fn new_pool<A : ::std::net::ToSocketAddrs, H : ABCIApplication + 'static + Sync + Send + 'static>(addr: A, conf: ::grpc::ServerConf, h: H, cpu_pool: ::futures_cpupool::CpuPool) -> Self {
+    pub fn new_pool<A : ::std::net::ToSocketAddrs, H : ABCIApplication + 'static + Sync + Send + 'static>(addr: A, conf: ::grpc::ServerConf, h: H, cpu_pool: ::futures_cpupool::CpuPool) -> ::grpc::Result<Self> {
         let service_definition = ABCIApplicationServer::new_service_def(h);
-        ABCIApplicationServer {
-            grpc_server: ::grpc::Server::new_plain_pool(addr, conf, service_definition, cpu_pool),
-        }
+        Ok(ABCIApplicationServer {
+            grpc_server: ::grpc::Server::new_plain_pool(addr, conf, service_definition, cpu_pool)?,
+        })
     }
 
     pub fn new_service_def<H : ABCIApplication + 'static + Sync + Send + 'static>(handler: H) -> ::grpc::server::ServerServiceDefinition {
