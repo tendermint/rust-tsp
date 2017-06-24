@@ -17,6 +17,7 @@ pub mod types;
 pub mod types_grpc;
 pub mod grpc_server;
 pub mod socket_server;
+pub mod wire;
 
 pub trait Service {}
 
