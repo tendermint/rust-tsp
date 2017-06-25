@@ -3,12 +3,9 @@
 
 extern crate grpc;
 extern crate rust_abci;
-
-
-use rust_abci::new_server;
 use rust_abci::types::*;
 use rust_abci::types_grpc::*;
-use rust_abci::socket_server::*;
+use rust_abci::socket_server::Application;
 
 
 struct DummyApp;
@@ -17,6 +14,7 @@ unsafe impl Sync for DummyApp {}
 
 unsafe impl Send for DummyApp {}
 
+// Socket implementation
 impl Application for DummyApp {
     fn begin_block(&self, p: RequestBeginBlock) -> ResponseBeginBlock {
         println!("begin_block");
@@ -40,7 +38,9 @@ impl Application for DummyApp {
 
     fn echo(&self, p: RequestEcho) -> ResponseEcho {
         println!("echo");
-        ResponseEcho::new()
+        let mut response = ResponseEcho::new();
+        response.set_message(p.get_message().to_owned());
+        return response;
     }
 
     fn end_block(&self, p: RequestEndBlock) -> ResponseEndBlock {
@@ -74,6 +74,7 @@ impl Application for DummyApp {
     }
 }
 
+// GRPC Implementation
 impl ABCIApplication for DummyApp {
     fn echo(&self, o: ::grpc::RequestOptions, p: RequestEcho) -> ::grpc::SingleResponse<ResponseEcho> {
         println!("Echo");
@@ -146,13 +147,16 @@ impl ABCIApplication for DummyApp {
 fn main() {
     use std::env;
     use std::thread;
-    use socket_server;
 
     let args: Vec<String> = env::args().collect();
     let connection_type: &str = &args[1];
     let listen_addr: &str = &args[2];
 
-    let _server = socket_server::new_server(listen_addr, connection_type, Box::new(DummyApp));
+    match connection_type {
+        "grpc" => rust_abci::grpc_server::new_server(listen_addr, DummyApp),
+        "socket" => rust_abci::socket_server::new_server(listen_addr, DummyApp),
+        _ => unimplemented!(),
+    }
 
     loop {
         thread::park();
