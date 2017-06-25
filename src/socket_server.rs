@@ -13,16 +13,40 @@ struct DummyApp {}
 
 impl Service for DummyApp {}
 
-pub fn new_server<H: ABCIApplication + 'static + Sync + Send + 'static>(listen_addr: &str, app: H) -> Box<Service> {
+
+pub trait Application {
+    fn begin_block(&self, p: types::RequestBeginBlock) -> types::ResponseBeginBlock;
+
+    fn check_tx(&self, p: types::RequestCheckTx) -> types::ResponseCheckTx;
+
+    fn commit(&self, p: types::RequestCommit) -> types::ResponseCommit;
+
+    fn deliver_tx(&self, p: types::RequestDeliverTx) -> types::ResponseDeliverTx;
+
+    fn echo(&self, p: types::RequestEcho) -> types::ResponseEcho;
+
+    fn end_block(&self, p: types::RequestEndBlock) -> types::ResponseEndBlock;
+
+    fn flush(&self, p: types::RequestFlush) -> types::ResponseFlush;
+
+    fn info(&self, p: types::RequestInfo) -> types::ResponseInfo;
+
+    fn init_chain(&self, p: types::RequestInitChain) -> types::ResponseInitChain;
+
+    fn query(&self, p: types::RequestQuery) -> types::ResponseQuery;
+
+    fn set_option(&self, p: types::RequestSetOption) -> types::ResponseSetOption;
+}
+
+pub fn new_server<H: Application + 'static + Send>(listen_addr: &str, app: Box<H>) -> Box<Service> {
     let server = TcpListener::bind(listen_addr).unwrap();
 
     for request in server.incoming() {
         thread::spawn(move || {
-            println!("Received connection");
             match request {
                 Ok(mut stream) => {
                     let request = read_abci_message(&mut stream).unwrap();
-                    handle_abci_message(request);
+                    handle_abci_message(&mut stream, request, app.clone());
                 }
                 Err(e) => {
                     println!("connection failed");
@@ -46,78 +70,58 @@ fn read_abci_message(stream: &mut TcpStream) -> Option<Request> {
 
     stream.read_exact(&mut message_bytes);
 
-    let message = parse_from_bytes::<Request>(&message_bytes).unwrap();
+    let message = parse_from_bytes::<Request>(&message_bytes);
 
-    println!("{}", varint_length);
-    println!("{}", message_length);
-    println!("{:?}", &message);
-    Some(message)
+    message.ok()
+}
+
+fn write_abci_message(stream: &mut TcpStream) {
+    
 }
 
 
-fn handle_abci_message(message: Request) {
-    println!("handle_abci_message: {:?}", &message);
+fn handle_abci_message<H: Application + 'static + Send>(stream: &mut TcpStream, message: Request, app: Box<H>) {
     if message.has_begin_block() {
-        println!("begin_block");
+        let response = app.begin_block(*message.get_begin_block());
     }
 
     if message.has_check_tx() {
-        println!("check_tx");
+        let response = app.check_tx(*message.get_check_tx());
     }
 
     if message.has_commit() {
-        println!("commit");
+        let response = app.commit(*message.get_commit());
     }
 
     if message.has_deliver_tx() {
-        println!("deliver_tx");
+        let response = app.deliver_tx(*message.get_deliver_tx());
     }
 
     if message.has_echo() {
-        println!("echo");
+        let response = app.echo(*message.get_echo());
     }
 
     if message.has_end_block() {
-        println!("end_block");
+        let response = app.end_block(*message.get_end_block());
     }
 
     if message.has_flush() {
-        println!("flush");
+        let response = app.flush(*message.get_flush());
     }
 
     if message.has_info() {
-        println!("info");
+        let response = app.info(*message.get_info());
     }
 
     if message.has_init_chain() {
-        println!("init_chain");
+        let response = app.init_chain(*message.get_init_chain());
     }
 
     if message.has_query() {
-        println!("query");
+        let response = app.query(*message.get_query());
     }
 
     if message.has_set_option() {
-        println!("set_option");
+        let response = app.set_option(*message.get_set_option());
     }
-
-    println!("the fuck");
 }
-
-/*
-// reads the incoming stream and returns types::Request
-// callers have to determine the concrete Request by matching against it and then respond appropriately
-// and call the appropriate functions on the ABCIApplication
-fn read_abci_message(stream: &mut TcpStream) -> types::Request {
-    
-}
-
-// matches on the message and calls the appropriate functions on the app
-// the function then returns appropriate response to write into the stream
-fn handle_abci_message(message: , app: ) -> response {
-    
-}
-
-// writes a protobuf message into the TcpStream
-fn write_abci_message(stream: &mut TcpStream, response: ) 
-*/
