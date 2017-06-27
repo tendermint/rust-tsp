@@ -30,24 +30,23 @@ pub fn new_server<H: Application + 'static + Send + Sync + 'static>(listen_addr:
 }
 
 fn write_abci_message(stream: &mut TcpStream, response: Response) {
-    let bytes = response.write_to_bytes().unwrap();
+    let response = response.get_echo();
+    let message = response.write_to_bytes().unwrap();
+    let message_length = message.len();
 
-    let i = bytes.len();
+    let varint_length = (7+64-message_length.leading_zeros())/8;
 
-    let size = (7+64-i.leading_zeros())/8;
+    stream.write_u8(varint_length as u8);
 
-    stream.write_u8(size as u8);
+    stream.write_u64::<BigEndian>(message_length as u64);
 
-    stream.write_u64::<BigEndian>(i as u64);
-
-    stream.write_all(&bytes);
+    stream.write_all(&message);
 
     stream.flush();
 
-    println!("{:?}", &response);
-    println!("{:?}", &bytes);
-    println!("{:?}", i);
-    println!("{:?}", size);
+    println!("{:?}", &varint_length);
+    println!("{:?}", &message_length);
+    println!("{:?}", &message);
 }
 
 pub trait Application {
