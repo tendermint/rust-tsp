@@ -14,10 +14,14 @@ include = ["Cargo.toml", "src/**/*.rs", "README.md", "LICENSE-APACHE", "LICENSE-
 
 [dependencies]
 byteorder       = "1.0"
-futures         = "0.1"
 futures-cpupool = "0.1"
 grpc            = "0.*"
 protobuf        = "1.*"
 tls-api         = "0.*"
-tokio-core      = "0.1.8"
-websocket       = "0.20.1"
+
+bytes = "0.4"
+futures = "0.1"
+tokio-io = "0.1"
+tokio-core = "0.1"
+tokio-proto = "0.1"
+tokio-service = "0.1"

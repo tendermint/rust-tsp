@@ -1,48 +1,118 @@
-use types_grpc::ABCIApplication;
-use std::net::{TcpListener, TcpStream};
-use std::thread;
-use std::io::{Read, Write};
-use protobuf::{Message, MessageStatic, parse_from_bytes};
-use types::{Request, Response};
+use std::io;
+use std::str;
+use bytes;
+use bytes::{BytesMut, ByteOrder, BigEndian};
+use tokio_io::codec::{Encoder, Decoder};
+use tokio_proto::pipeline::ServerProto;
+use tokio_io::{AsyncRead, AsyncWrite};
+use tokio_io::codec::Framed;
+use tokio_service::Service;
+use futures::{future, Future, BoxFuture};
 use types;
-use byteorder::{ReadBytesExt, BigEndian, WriteBytesExt};
-use std::sync::Arc;
+use byteorder::{ReadBytesExt};
+use protobuf;
 
-pub fn new_server<H: Application + 'static + Send + Sync + 'static>(listen_addr: &str, app: H) {
-    let server = TcpListener::bind(listen_addr).unwrap();
-    let app = Arc::new(app);
 
-    for request in server.incoming() {
-        let clone = app.clone();
-        thread::spawn(move || {
-            match request {
-                Ok(mut stream) => {
-                    let mut request = read_abci_message(&mut stream).unwrap();
-                    let response = handle_abci_message(&mut request, clone);
-                    write_abci_message(&mut stream, response);
-                }
-                Err(e) => {
-                    println!("connection failed");
-                }
-            }
-        });
+pub struct ABCICodec;
+
+impl Decoder for ABCICodec {
+    type Item = types::Request;
+    type Error = io::Error;
+
+    fn decode(&mut self, buf: &mut BytesMut) -> io::Result<Option<types::Request>> {
+        println!("{:?}", buf.as_ref());
+        let varint_length_bytes = buf.split_to(1);
+        println!("{:?}", varint_length_bytes);
+
+        let varint_length = varint_length_bytes[0] as usize;
+        println!("{:?}", varint_length);
+
+        let message_length_bytes = buf.split_to(varint_length);
+        println!("{:?}", message_length_bytes);
+
+        let message_length: u64 = BigEndian::read_uint(&message_length_bytes, varint_length);
+        println!("{:?}", message_length);
+
+        let message_bytes = buf.split_to(message_length as usize);
+        println!("{:?}", message_bytes);
+
+        let message = protobuf::core::parse_from_bytes::<types::Request>(&message_bytes);
+        println!("{:?}", message);
+
+        Ok(message.ok())
     }
 }
 
-fn write_abci_message(stream: &mut TcpStream, response: Response) {
-    let response = response.get_echo();
+impl Encoder for ABCICodec {
+    type Item = types::Response;
+    type Error = io::Error;
+
+    fn encode(&mut self, msg: types::Response, buf: &mut BytesMut) -> io::Result<()> {
+        println!("{:?}", msg);
+        Ok(())
+    }
+}
+
+
+pub struct ABCIProto;
+
+impl<T: AsyncRead + AsyncWrite + 'static> ServerProto<T> for ABCIProto {
+    type Request = types::Request;
+
+    type Response = types::Response;
+
+    type Transport = Framed<T, ABCICodec>;
+
+    type BindTransport = Result<Self::Transport, io::Error>;
+
+    fn bind_transport(&self, io: T) -> Self::BindTransport {
+        Ok(io.framed(ABCICodec))
+    }
+}
+
+
+// Needs a field to hold the ABCI app that runs through this service
+pub struct ABCIService {
+    
+}
+
+impl Service for ABCIService {
+    type Request = types::Request;
+    type Response = types::Response;
+
+    type Error = io::Error;
+
+    type Future = BoxFuture<Self::Response, Self::Error>;
+
+    fn call(&self, req: Self::Request) -> Self::Future {
+        future::err(io::Error::new(io::ErrorKind::Other, "nothing happened yet")).boxed()
+    }
+}
+
+
+// The app should definitely not be Send + Sync
+// it should be protected by a mutex to only allow sequential and ordered read
+// and write access
+pub fn new_server<H>(listen_addr: &str, app: H) {
+}
+
+
+
+
+/*
+fn write_abci_message(stream: &mut TcpStream, response: &mut Response) {
     let message = response.write_to_bytes().unwrap();
     let message_length = message.len();
 
     let varint_length = (7+64-message_length.leading_zeros())/8;
 
-    stream.write_u8(varint_length as u8);
+    stream.write_u8(varint_length as u8).unwrap();
 
-    stream.write_u64::<BigEndian>(message_length as u64);
+    stream.write_u64::<BigEndian>(message_length as u64).unwrap();
 
-    stream.write_all(&message);
+    stream.write_all(&message).unwrap();
 
-    stream.flush();
+    stream.flush().unwrap();
 
     println!("{:?}", &varint_length);
     println!("{:?}", &message_length);
@@ -83,7 +153,7 @@ fn read_abci_message(stream: &mut TcpStream) -> Option<Request> {
 
     let mut message_bytes: Vec<u8> = vec![0; message_length as usize];
 
-    stream.read_exact(&mut message_bytes);
+    stream.read_exact(&mut message_bytes).unwrap();
 
     let message = parse_from_bytes::<Request>(&message_bytes);
 
@@ -164,3 +234,4 @@ fn handle_abci_message<H: Application + 'static + Send + Sync + 'static>(message
     }
     return result;
 }
+*/
