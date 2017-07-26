@@ -1,7 +1,7 @@
 use std::io;
 use std::str;
 use bytes;
-use bytes::{BytesMut, ByteOrder, BigEndian};
+use bytes::{BytesMut, ByteOrder, BigEndian, BufMut};
 use tokio_io::codec::{Encoder, Decoder};
 use tokio_proto::pipeline::ServerProto;
 use tokio_io::{AsyncRead, AsyncWrite};
@@ -9,8 +9,11 @@ use tokio_io::codec::Framed;
 use tokio_service::Service;
 use futures::{future, Future, BoxFuture};
 use types;
-use byteorder::{ReadBytesExt};
+use byteorder::{ReadBytesExt, WriteBytesExt};
 use protobuf;
+use protobuf::Message;
+use std::cmp;
+use std::sync::Arc;
 
 
 pub struct ABCICodec;
@@ -20,26 +23,29 @@ impl Decoder for ABCICodec {
     type Error = io::Error;
 
     fn decode(&mut self, buf: &mut BytesMut) -> io::Result<Option<types::Request>> {
-        println!("{:?}", buf.as_ref());
-        let varint_length_bytes = buf.split_to(1);
-        println!("{:?}", varint_length_bytes);
+        let avail = buf.len();
+        if avail == 0 {
+            return Ok(None);
+        }
 
-        let varint_length = varint_length_bytes[0] as usize;
-        println!("{:?}", varint_length);
+        let varint_len = buf[0] as usize;
+        if varint_len == 0 || varint_len > 8 {
+            return Err(io::Error::new(io::ErrorKind::InvalidData,
+            "bogus packet length"));
+        }
 
-        let message_length_bytes = buf.split_to(varint_length);
-        println!("{:?}", message_length_bytes);
+        let msg_nbytes = BigEndian::read_uint(&buf[1 .. (varint_len + 1)], varint_len) as usize;
+        let header_len = 1 + varint_len;
 
-        let message_length: u64 = BigEndian::read_uint(&message_length_bytes, varint_length);
-        println!("{:?}", message_length);
+        if (avail - header_len) < msg_nbytes {
+            return Ok(None);
+        }
 
-        let message_bytes = buf.split_to(message_length as usize);
-        println!("{:?}", message_bytes);
+        let message = protobuf::core::parse_from_bytes(
+            &buf[header_len .. (header_len + msg_nbytes)]);
+        let _ = buf.split_to(header_len + msg_nbytes);
 
-        let message = protobuf::core::parse_from_bytes::<types::Request>(&message_bytes);
-        println!("{:?}", message);
-
-        Ok(message.ok())
+        return Ok(message.ok());
     }
 }
 
@@ -48,7 +54,17 @@ impl Encoder for ABCICodec {
     type Error = io::Error;
 
     fn encode(&mut self, msg: types::Response, buf: &mut BytesMut) -> io::Result<()> {
-        println!("{:?}", msg);
+        let msg_len = msg.compute_size();
+        let varint_len = cmp::max(4 - (msg_len.leading_zeros() >> 4), 1);
+
+        buf.reserve((1 + varint_len + msg_len) as usize);
+
+        let mut writer = buf.writer();
+
+        writer.write_u8(varint_len as u8)?;
+        writer.write_u64::<BigEndian>(msg_len as u64)?;
+        msg.write_to_writer(&mut writer).unwrap();
+
         Ok(())
     }
 }
@@ -73,7 +89,7 @@ impl<T: AsyncRead + AsyncWrite + 'static> ServerProto<T> for ABCIProto {
 
 // Needs a field to hold the ABCI app that runs through this service
 pub struct ABCIService {
-    
+    pub app: Arc<Application>
 }
 
 impl Service for ABCIService {
@@ -85,38 +101,15 @@ impl Service for ABCIService {
     type Future = BoxFuture<Self::Response, Self::Error>;
 
     fn call(&self, req: Self::Request) -> Self::Future {
+        let mut result = types::Response::new();
+        if req.has_info() {
+            let response = self.app.info(req.get_info());
+            result.set_info(response);
+            return future::ok(result).boxed();
+        }
+
         future::err(io::Error::new(io::ErrorKind::Other, "nothing happened yet")).boxed()
     }
-}
-
-
-// The app should definitely not be Send + Sync
-// it should be protected by a mutex to only allow sequential and ordered read
-// and write access
-pub fn new_server<H>(listen_addr: &str, app: H) {
-}
-
-
-
-
-/*
-fn write_abci_message(stream: &mut TcpStream, response: &mut Response) {
-    let message = response.write_to_bytes().unwrap();
-    let message_length = message.len();
-
-    let varint_length = (7+64-message_length.leading_zeros())/8;
-
-    stream.write_u8(varint_length as u8).unwrap();
-
-    stream.write_u64::<BigEndian>(message_length as u64).unwrap();
-
-    stream.write_all(&message).unwrap();
-
-    stream.flush().unwrap();
-
-    println!("{:?}", &varint_length);
-    println!("{:?}", &message_length);
-    println!("{:?}", &message);
 }
 
 pub trait Application {
@@ -134,35 +127,13 @@ pub trait Application {
 
     fn flush(&self, p: types::RequestFlush) -> types::ResponseFlush;
 
-    fn info(&self, p: types::RequestInfo) -> types::ResponseInfo;
+    fn info(&self, p: &types::RequestInfo) -> types::ResponseInfo;
 
     fn init_chain(&self, p: types::RequestInitChain) -> types::ResponseInitChain;
 
     fn query(&self, p: types::RequestQuery) -> types::ResponseQuery;
 
     fn set_option(&self, p: types::RequestSetOption) -> types::ResponseSetOption;
-}
-
-fn read_abci_message(stream: &mut TcpStream) -> Option<Request> {
-    let varint_length = stream.read_u8().unwrap();
-    if varint_length > 4 {
-        return None;
-    }
-
-    let message_length: u64 = stream.read_uint::<BigEndian>(varint_length as usize).unwrap();
-
-    let mut message_bytes: Vec<u8> = vec![0; message_length as usize];
-
-    stream.read_exact(&mut message_bytes).unwrap();
-
-    let message = parse_from_bytes::<Request>(&message_bytes);
-
-    println!("{:?}", varint_length);
-    println!("{:?}", message_length);
-    println!("{:?}", message_bytes);
-    println!("{:?}", &message);
-
-    message.ok()
 }
 
 fn handle_abci_message<H: Application + 'static + Send + Sync + 'static>(message: &mut Request, app: Arc<H>) -> Response {

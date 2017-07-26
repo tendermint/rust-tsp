@@ -6,7 +6,7 @@ extern crate grpc;
 extern crate rust_abci;
 
 
-use rust_abci::new_server;
+use rust_abci::socket_server::new_server;
 use rust_abci::types::*;
 use rust_abci::types_grpc::*;
 
@@ -167,7 +167,7 @@ fn main() {
 
     let app = CounterApp::new(true);
 
-    let _server = new_server(listen_addr, connection_type, app);
+    let _server = new_server(listen_addr, app);
 
     loop {
         thread::park();

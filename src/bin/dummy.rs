@@ -5,7 +5,8 @@ extern crate grpc;
 extern crate rust_abci;
 use rust_abci::types::*;
 use rust_abci::types_grpc::*;
-//use rust_abci::socket_server::Application;
+use rust_abci::socket_server::ABCIService;
+use rust_abci::socket_server::Application;
 
 extern crate tokio_proto;
 
@@ -17,7 +18,6 @@ unsafe impl Sync for DummyApp {}
 unsafe impl Send for DummyApp {}
 
 // Socket implementation
-/*
 impl Application for DummyApp {
     fn begin_block(&self, p: RequestBeginBlock) -> ResponseBeginBlock {
         println!("begin_block");
@@ -61,7 +61,7 @@ impl Application for DummyApp {
         ResponseInitChain::new()
     }
 
-    fn info(&self, p: RequestInfo) -> ResponseInfo {
+    fn info(&self, p: &RequestInfo) -> ResponseInfo {
         println!("info");
         ResponseInfo::new()
     }
@@ -76,7 +76,6 @@ impl Application for DummyApp {
         ResponseSetOption::new()
     }
 }
-*/
 
 // GRPC Implementation
 impl ABCIApplication for DummyApp {
@@ -153,6 +152,7 @@ fn main() {
     use std::thread;
     use tokio_proto::TcpServer;
     use rust_abci::socket_server::*;
+    use std::sync::Arc;
 
     let args: Vec<String> = env::args().collect();
     let connection_type: &str = &args[1];
@@ -163,7 +163,7 @@ fn main() {
         "grpc" => rust_abci::grpc_server::new_server(listen_addr, DummyApp),
         "socket" => {
             let server = TcpServer::new(ABCIProto, "0.0.0.0:46658".parse().unwrap());
-            server.serve(|| Ok(ABCIService));
+            server.serve(|| Ok(ABCIService{app: Arc::new(DummyApp)}));
         },
         _ => unimplemented!(),
     }
