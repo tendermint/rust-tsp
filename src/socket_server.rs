@@ -54,7 +54,7 @@ pub trait Application {
 }
 
 
-pub struct ABCICodec;
+struct ABCICodec;
 
 impl Decoder for ABCICodec {
     type Item = types::Request;
@@ -118,7 +118,7 @@ impl Encoder for ABCICodec {
 }
 
 
-pub struct ABCIProto;
+struct ABCIProto;
 
 impl<T: AsyncRead + AsyncWrite + 'static> ServerProto<T> for ABCIProto {
     type Request = types::Request;
@@ -132,8 +132,8 @@ impl<T: AsyncRead + AsyncWrite + 'static> ServerProto<T> for ABCIProto {
 }
 
 
-pub struct ABCIService {
-    pub app: Box<Application>
+struct ABCIService {
+    app: Box<Application>
 }
 
 impl Service for ABCIService {

@@ -6,7 +6,6 @@ extern crate grpc;
 extern crate rust_abci;
 
 
-//use rust_abci::socket_server::new_server;
 use rust_abci::types::*;
 use rust_abci::types_grpc::*;
 
@@ -33,6 +32,7 @@ impl CounterApp {
     }
 }
 
+// GRPC implementation
 impl ABCIApplication for CounterApp {
     fn echo(&self, o: ::grpc::RequestOptions, p: RequestEcho) -> ::grpc::SingleResponse<ResponseEcho> {
         let echo = p.get_message();
@@ -167,7 +167,10 @@ fn main() {
 
     let app = CounterApp::new(true);
 
-    //let _server = new_server(listen_addr, app);
+    match connection_type {
+        "grpc" => rust_abci::grpc_server::new_server(listen_addr, app),
+        _ => unimplemented!(),
+    }
 
     loop {
         thread::park();

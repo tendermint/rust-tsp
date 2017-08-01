@@ -149,7 +149,6 @@ impl ABCIApplication for DummyApp {
 fn main() {
     use std::env;
     use std::thread;
-    use std::sync::Arc;
 
     let args: Vec<String> = env::args().collect();
     let connection_type: &str = &args[1];
@@ -157,7 +156,7 @@ fn main() {
 
 
     match connection_type {
-        //"grpc" => rust_abci::grpc_server::new_server(listen_addr, DummyApp),
+        "grpc" => rust_abci::grpc_server::new_server(listen_addr, DummyApp),
         "socket" => rust_abci::socket_server::new_server(listen_addr, DummyApp),
         _ => unimplemented!(),
     }
