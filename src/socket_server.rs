@@ -1,20 +1,57 @@
+use std::cmp;
 use std::io;
 use std::io::Write;
-use std::str;
-use bytes;
-use bytes::{BytesMut, ByteOrder, BigEndian, BufMut};
-use tokio_io::codec::{Encoder, Decoder};
-use tokio_proto::pipeline::ServerProto;
-use tokio_io::{AsyncRead, AsyncWrite};
-use tokio_io::codec::Framed;
-use tokio_service::Service;
-use futures::{future, Future, BoxFuture};
-use types;
-use byteorder::{ReadBytesExt, WriteBytesExt};
+
+use bytes::{BigEndian, BytesMut, ByteOrder, BufMut};
+
+use byteorder::WriteBytesExt;
+
+use futures::future;
+use futures::{BoxFuture, Future};
+
 use protobuf;
 use protobuf::Message;
-use std::cmp;
-use std::sync::Arc;
+
+use tokio_io::{AsyncRead, AsyncWrite};
+use tokio_io::codec::{Decoder, Encoder, Framed};
+
+use tokio_proto::TcpServer;
+use tokio_proto::pipeline::ServerProto;
+
+use tokio_service::Service;
+
+use types;
+
+
+pub fn new_server<H: Application + 'static + Send + Sync + Copy>(listen_addr: &str, app: H) {
+    let server = TcpServer::new(ABCIProto, listen_addr.parse().unwrap());
+    server.serve(move|| Ok(ABCIService{app: Box::new(app)}));
+}
+
+
+pub trait Application {
+    fn begin_block(&self, p: &types::RequestBeginBlock) -> types::ResponseBeginBlock;
+
+    fn check_tx(&self, p: &types::RequestCheckTx) -> types::ResponseCheckTx;
+
+    fn commit(&self, p: &types::RequestCommit) -> types::ResponseCommit;
+
+    fn deliver_tx(&self, p: &types::RequestDeliverTx) -> types::ResponseDeliverTx;
+
+    fn echo(&self, p: &types::RequestEcho) -> types::ResponseEcho;
+
+    fn end_block(&self, p: &types::RequestEndBlock) -> types::ResponseEndBlock;
+
+    fn flush(&self, p: &types::RequestFlush) -> types::ResponseFlush;
+
+    fn info(&self, p: &types::RequestInfo) -> types::ResponseInfo;
+
+    fn init_chain(&self, p: &types::RequestInitChain) -> types::ResponseInitChain;
+
+    fn query(&self, p: &types::RequestQuery) -> types::ResponseQuery;
+
+    fn set_option(&self, p: &types::RequestSetOption) -> types::ResponseSetOption;
+}
 
 
 pub struct ABCICodec;
@@ -31,8 +68,11 @@ impl Decoder for ABCICodec {
 
         let varint_len = buf[0] as usize;
         if varint_len == 0 || varint_len > 8 {
-            return Err(io::Error::new(io::ErrorKind::InvalidData,
-            "bogus packet length"));
+            return Err(io::Error::new(io::ErrorKind::InvalidData, "bogus packet length"));
+        }
+
+        if avail < varint_len+1 {
+            return Ok(None);
         }
 
         let msg_nbytes = BigEndian::read_uint(&buf[1 .. (varint_len + 1)], varint_len) as usize;
@@ -42,19 +82,9 @@ impl Decoder for ABCICodec {
             return Ok(None);
         }
 
-        print!(" >> ");
-        for b in &buf[.. avail] {
-            print!("{:02x} ", b);
-        }
-        println!();
-
         let message = protobuf::core::parse_from_bytes(
             &buf[header_len .. (header_len + msg_nbytes)]);
         let _ = buf.split_to(header_len + msg_nbytes);
-
-        println!("{:?}", varint_len);
-        println!("{:?}", msg_nbytes);
-        println!("{:?}", &message);
 
         return Ok(message.ok());
     }
@@ -83,16 +113,6 @@ impl Encoder for ABCICodec {
         writer.write(&msg_len_bytes[(8 - varint_len as usize) ..])?;
         msg.write_to_writer(&mut writer).unwrap();
 
-        print!(" << ");
-        for b in &writer.into_inner()[.. total_msg_len] {
-            print!("{:02x} ", b);
-        }
-        println!();
-
-        println!("{:?}", varint_len);
-        println!("{:?}", msg_len as u64);
-        println!("{:?}", &msg);
-
         Ok(())
     }
 }
@@ -102,11 +122,8 @@ pub struct ABCIProto;
 
 impl<T: AsyncRead + AsyncWrite + 'static> ServerProto<T> for ABCIProto {
     type Request = types::Request;
-
     type Response = types::Response;
-
     type Transport = Framed<T, ABCICodec>;
-
     type BindTransport = Result<Self::Transport, io::Error>;
 
     fn bind_transport(&self, io: T) -> Self::BindTransport {
@@ -115,7 +132,6 @@ impl<T: AsyncRead + AsyncWrite + 'static> ServerProto<T> for ABCIProto {
 }
 
 
-// Needs a field to hold the ABCI app that runs through this service
 pub struct ABCIService {
     pub app: Box<Application>
 }
@@ -123,40 +139,15 @@ pub struct ABCIService {
 impl Service for ABCIService {
     type Request = types::Request;
     type Response = types::Response;
-
     type Error = io::Error;
-
     type Future = BoxFuture<Self::Response, Self::Error>;
 
     fn call(&self, req: Self::Request) -> Self::Future {
         let res = handle_abci_message(&req, &self.app);
-        return future::ok(res).boxed();
+        future::ok(res).boxed()
     }
 }
 
-pub trait Application {
-    fn begin_block(&self, p: &types::RequestBeginBlock) -> types::ResponseBeginBlock;
-
-    fn check_tx(&self, p: &types::RequestCheckTx) -> types::ResponseCheckTx;
-
-    fn commit(&self, p: &types::RequestCommit) -> types::ResponseCommit;
-
-    fn deliver_tx(&self, p: &types::RequestDeliverTx) -> types::ResponseDeliverTx;
-
-    fn echo(&self, p: &types::RequestEcho) -> types::ResponseEcho;
-
-    fn end_block(&self, p: &types::RequestEndBlock) -> types::ResponseEndBlock;
-
-    fn flush(&self, p: &types::RequestFlush) -> types::ResponseFlush;
-
-    fn info(&self, p: &types::RequestInfo) -> types::ResponseInfo;
-
-    fn init_chain(&self, p: &types::RequestInitChain) -> types::ResponseInitChain;
-
-    fn query(&self, p: &types::RequestQuery) -> types::ResponseQuery;
-
-    fn set_option(&self, p: &types::RequestSetOption) -> types::ResponseSetOption;
-}
 
 fn handle_abci_message(message: &types::Request, app: &Box<Application>) -> types::Response {
     let mut result = types::Response::new();

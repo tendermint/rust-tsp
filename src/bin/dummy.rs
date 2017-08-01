@@ -1,16 +1,15 @@
 #![allow(unused_variables)]
 #![allow(unused_must_use)]
-
 extern crate grpc;
 extern crate rust_abci;
-use rust_abci::types::*;
-use rust_abci::types_grpc::*;
-use rust_abci::socket_server::ABCIService;
-use rust_abci::socket_server::Application;
-
 extern crate tokio_proto;
 
+use rust_abci::types::*;
+use rust_abci::types_grpc::ABCIApplication;
+use rust_abci::socket_server::Application;
 
+
+#[derive(Copy, Clone)]
 struct DummyApp;
 
 unsafe impl Sync for DummyApp {}
@@ -150,8 +149,7 @@ impl ABCIApplication for DummyApp {
 fn main() {
     use std::env;
     use std::thread;
-    use tokio_proto::TcpServer;
-    use rust_abci::socket_server::*;
+    use std::sync::Arc;
 
     let args: Vec<String> = env::args().collect();
     let connection_type: &str = &args[1];
@@ -159,11 +157,8 @@ fn main() {
 
 
     match connection_type {
-        "grpc" => rust_abci::grpc_server::new_server(listen_addr, DummyApp),
-        "socket" => {
-            let server = TcpServer::new(ABCIProto, "0.0.0.0:46658".parse().unwrap());
-            server.serve(|| Ok(ABCIService{app: Box::new(DummyApp)}));
-        },
+        //"grpc" => rust_abci::grpc_server::new_server(listen_addr, DummyApp),
+        "socket" => rust_abci::socket_server::new_server(listen_addr, DummyApp),
         _ => unimplemented!(),
     }
 
