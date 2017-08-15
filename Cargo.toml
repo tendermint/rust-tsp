@@ -1,27 +1,31 @@
 [package]
-name = "rust-abci"
-version = "0.1.0"
+name = "tsp"
+version = "0.2.0"
 authors = ["Adrian Brink <adrian@brink-holdings.com>"]
 license = "MIT/Apache-2.0"
-description = "An implementation of the ABCI protocol used by Tendermint Core. Allows the building of ABCI apps in Rust."
+description = "An implementation of the TSP protocol used by Tendermint Core. Allows the building of COSMOS apps in Rust."
 homepage = "https://tendermint.com/docs/guides/app-development"
-repository = "https://github.com/tendermint/rust-abci"
-documentation = "https://docs.rs/rust-abci/0.1.0/rust_abci/"
-keywords = ["abci", "tendermint", "cosmos", "blockchain", "proof-of-stake"]
+repository = "https://github.com/tendermint/tsp"
+documentation = "https://docs.rs/tsp/0.1.0/tsp/"
+keywords = ["tsp, abci", "tendermint", "cosmos", "blockchain", "proof-of-stake"]
 categories = ["encoding"]
 readme = "README.md"
-include = ["Cargo.toml", "src/**/*.rs", "README.md", "LICENSE-APACHE", "LICENSE-MIT"]
 
 [dependencies]
-byteorder       = "1.0"
-futures-cpupool = "0.1"
-grpc            = "0.*"
-protobuf        = "1.*"
-tls-api         = "0.*"
-
 bytes = "0.4"
-futures = "0.1"
+futures = "0.1.14"
+futures-cpupool = "0.1.5"
+protobuf = "1.4.1"
+
+
+byteorder       = "1.0"
+tls-api         = "0.*"
 tokio-io = "0.1"
 tokio-core = "0.1"
 tokio-proto = "0.1"
 tokio-service = "0.1"
+
+[build-dependencies]
+protoc = "1.4.1"
+protoc-rust = "1.4.1"
+

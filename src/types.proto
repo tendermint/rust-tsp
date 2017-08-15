@@ -1,6 +1,5 @@
 syntax = "proto3";
 package types;
-option (rustproto.expose_oneof_all) = true;
 
 // This file is copied from http://github.com/tendermint/abci
 
