@@ -5,7 +5,7 @@ use std::env;
 use std::thread;
 
 use tsp::types::*;
-use tsp::server::Application;
+use tsp::Application;
 
 
 #[derive(Copy, Clone)]
@@ -76,9 +76,10 @@ fn main() {
     let args: Vec<String> = env::args().collect();
     let connection_type: &str = &args[1];
     let listen_addr: &str = &args[2];
+    static APP: DummyApp = DummyApp;
 
     match connection_type {
-        "socket" => tsp::server::new(listen_addr, DummyApp),
+        "socket" => tsp::server::new(listen_addr.parse().unwrap(), &APP),
         _ => unimplemented!(),
     }
 

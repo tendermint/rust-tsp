@@ -26,7 +26,7 @@ use tokio_proto::pipeline::ServerProto;
 use tokio_service::Service;
 
 
-pub fn new<A: Application + Send + Sync + 'static>(listen_addr: SocketAddr, app: &A) {
+pub fn new<A: Application + Send + Sync + 'static>(listen_addr: SocketAddr, app: &'static A) {
     let server = TcpServer::new(TSPProto, listen_addr);
     server.serve(move|| Ok(TSPService{app: app}));
 }
