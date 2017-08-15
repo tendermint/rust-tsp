@@ -10,6 +10,7 @@ documentation = "https://docs.rs/tsp/0.1.0/tsp/"
 keywords = ["tsp, abci", "tendermint", "cosmos", "blockchain", "proof-of-stake"]
 categories = ["encoding"]
 readme = "README.md"
+include = ["src/**/*", "Cargo.toml"]
 
 [dependencies]
 bytes = "0.4"
