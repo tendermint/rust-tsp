@@ -12,10 +12,11 @@ include = ["src/**/*", "Cargo.toml"]
 
 [dependencies]
 bytes = "0.4"
-protobuf = "2.0.1"
-byteorder = "1.2.4"
+protobuf = "2.2.0"
+byteorder = "1.2.7"
 integer-encoding = "1.0.5"
+mockstream = "0.0.3"
 
 [build-dependencies]
-protoc = "1.4.1"
-protobuf-codegen-pure = "2.0.1"
+protoc = "2.2.0"
+protobuf-codegen-pure = "2.2.0"

@@ -14,6 +14,50 @@ use integer_encoding::VarInt;
 use protobuf;
 use protobuf::Message;
 
+use mockstream::SharedMockStream;
+use std::fmt::{Formatter, Debug, self};
+
+enum NetStream {
+	Mocked(SharedMockStream),
+	Tcp(TcpStream)
+}
+
+impl Debug for NetStream {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        match *self {
+			NetStream::Mocked(ref s) => {
+                Ok(f.debug_struct("SharedMockStream").finish()?)
+            },
+			NetStream::Tcp(ref s) => s.fmt(f),
+		}
+    }
+}
+
+impl io::Read for NetStream {
+	fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+		match *self {
+			NetStream::Mocked(ref mut s) => s.read(buf),
+			NetStream::Tcp(ref mut s) => s.read(buf),
+		}
+	}
+}
+
+impl io::Write for NetStream {
+	fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+		match *self {
+			NetStream::Mocked(ref mut s) => s.write(buf),
+			NetStream::Tcp(ref mut s) => s.write(buf),
+		}
+	}
+
+	fn flush(&mut self) -> io::Result<()> {
+		match *self {
+			NetStream::Mocked(ref mut s) => s.flush(),
+			NetStream::Tcp(ref mut s) => s.flush(),
+		}
+	}
+}
+
 const BUFFER_SIZE: usize = 4096;
 
 /// Creates the TCP server and listens for connections from Tendermint
@@ -31,7 +75,7 @@ where
         match new_connection {
             Ok(stream) => {
                 println!("Got connection! {:?}", stream);
-                thread::spawn(move || handle_stream(stream, &app_instance));
+                thread::spawn(move || handle_stream(NetStream::Tcp(stream), &app_instance));
             }
             Err(err) => {
                 // We need all 3 connections...
@@ -43,7 +87,7 @@ where
     Ok(())
 }
 
-fn handle_stream<A>(mut stream: TcpStream, app: &Arc<Mutex<A>>)
+fn handle_stream<A>(mut stream: NetStream, app: &Arc<Mutex<A>>)
 where
     A: Application + 'static + Send + Sync,
 {
@@ -65,7 +109,7 @@ where
     println!("Connection closed on {:?}", stream);
 }
 
-fn respond<A>(stream: &mut TcpStream, app: &mut A, request: &Request) -> io::Result<()>
+fn respond<A>(stream: &mut NetStream, app: &mut A, request: &Request) -> io::Result<()>
 where
     A: Application + 'static + Send + Sync,
 {
@@ -99,7 +143,7 @@ where
             response.set_commit(app.commit(request.get_commit()));
             response
         } else if request.has_echo() {
-            let echo_msg = response.get_echo().get_message().to_string();
+            let echo_msg = request.get_echo().get_message().to_string();
             response.set_echo({
                 let mut echo = ResponseEcho::new();
                 echo.set_message(echo_msg);
@@ -144,9 +188,38 @@ fn encode(msg: &Response, buf: &mut BytesMut) {
     msg.write_to_vec(&mut msg_to_vec).unwrap();
     let msg_len = msg_to_vec.len() as i64;
     let varint = i64::encode_var_vec(msg_len);
+    let remaining = buf.remaining_mut();
+    let needed = msg_to_vec.len() + varint.len();
+    if remaining < needed {
+        buf.reserve(needed);
+    }
+
     {
         let mut writer = buf.writer();
         writer.write_all(&varint).unwrap();
         writer.write_all(&msg_to_vec).unwrap();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    struct EmptyApp;
+    impl Application for EmptyApp {}
+
+    #[test]
+    fn respond_should_not_crash_over_4mb() {
+        let mut app = EmptyApp {};
+        let s = SharedMockStream::new();
+	    let mut e = NetStream::Mocked(s.clone());
+        let mut r = Request::new();
+        let mut echo = RequestEcho::new();
+        let st = (0..2*BUFFER_SIZE).map(|_| "X").collect::<String>();
+        echo.set_message(st);
+        
+        r.set_echo(echo);
+        let resp = respond(&mut e, &mut app, &r);
+        assert!(resp.is_ok())
     }
 }

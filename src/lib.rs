@@ -9,7 +9,7 @@
 //! Here's a simple example that communicates with Tendermint. Defaults callbacks are handled by
 //! the Trait.  The app doesn't do any actual processing on a transaction.
 //!
-//! ```
+//! ```rust,no_run
 //! struct EmptyApp;
 //!
 //! impl abci::Application for EmptyApp {}
@@ -24,6 +24,7 @@ use std::net::SocketAddr;
 extern crate bytes;
 extern crate integer_encoding;
 extern crate protobuf;
+extern crate mockstream;
 
 pub mod common;
 mod server;
