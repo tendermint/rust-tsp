@@ -8,7 +8,7 @@ This library implements the [ABCI
 protocol](https://tendermint.com/docs/spec/abci/) and can be used to write ABCI
 applications for [Tendermint](https://github.com/tendermint/tendermint/).
 
-**Tested against Tendermint 0.25.0**
+**Tested against Tendermint 0.26.3**
 
 ## Installation
 

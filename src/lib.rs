@@ -27,6 +27,7 @@ extern crate protobuf;
 extern crate mockstream;
 
 pub mod common;
+pub mod merkle;
 mod server;
 pub mod types;
 
