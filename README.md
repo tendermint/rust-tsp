@@ -2,7 +2,7 @@
 
 Tendermint ABCI server, written in Rust programming language.
 
-[![](https://tokei.rs/b1/github/tendermint/rust-tsp)](https://github.com/tendermint/rust-tsp)
+[![](https://tokei.rs/b1/github/tendermint/rust-tsp)](https://github.com/tendermint/rust-tsp) [![CircleCI](https://circleci.com/gh/tendermint/rust-tsp/tree/master.svg?style=shield)](https://circleci.com/gh/tendermint/rust-tsp/tree/master)
 
 This library implements the [ABCI
 protocol](https://tendermint.com/docs/spec/abci/) and can be used to write ABCI
