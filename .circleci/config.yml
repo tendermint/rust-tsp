@@ -33,7 +33,7 @@ jobs:
           command: rustup run stable cargo test
       - run:
           branches:
-            only: zach/publish
+            only: dry-run
           name: Publish Crate
           command: |
             cargo login $CARGO_TOKEN
