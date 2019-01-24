@@ -8,29 +8,29 @@ jobs:
       - checkout
       - restore_cache:
           key: project-cache
-          #      - run:
-          #          name: Check formatting
-          #          command: |
-          #            rustup component add rustfmt-preview
-          #            rustfmt --version
-          #            cargo fmt -- --check --color=auto
-          #      - run:
-          #          name: Nightly Build
-          #          command: |
-          #            rustup toolchain install nightly
-          #            rustup run nightly rustc --version --verbose
-          #            rustup run nightly cargo --version --verbose
-          #            rustup run nightly cargo build
-          #      - run:
-          #          name: Stable Build
-          #          command: |
-          #            rustup toolchain install stable
-          #            rustup run stable rustc --version --verbose
-          #            rustup run stable cargo --version --verbose
-          #            rustup run stable cargo build
-          #      - run:
-          #          name: Test
-          #          command: rustup run stable cargo test
+      - run:
+          name: Check formatting
+          command: |
+            rustup component add rustfmt-preview
+            rustfmt --version
+            cargo fmt -- --check --color=auto
+      - run:
+          name: Nightly Build
+          command: |
+            rustup toolchain install nightly
+            rustup run nightly rustc --version --verbose
+            rustup run nightly cargo --version --verbose
+            rustup run nightly cargo build
+      - run:
+          name: Stable Build
+          command: |
+            rustup toolchain install stable
+            rustup run stable rustc --version --verbose
+            rustup run stable cargo --version --verbose
+            rustup run stable cargo build
+      - run:
+          name: Test
+          command: rustup run stable cargo test
       - run:
           name: Publish Crate
           command: |
