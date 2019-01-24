@@ -1,6 +1,6 @@
 [package]
 name = "abci"
-version = "0.4.1"
+version = "0.4.2"
 authors = ["Adrian Brink <adrian@brink-holdings.com>", "Jackson Lewis <st.japa6@gmail.com>", "Dave Bryson", "Tomas Tauber"]
 license = "MIT/Apache-2.0"
 description = "Tendermint ABCI server for Rust"

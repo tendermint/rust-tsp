@@ -30,7 +30,7 @@ To use this library to build your own ABCI apps in Rust you have to include the 
 
 ```toml
 [dependencies]
-abci = "0.4.1"
+abci = "0.4.2"
 ```
 
 ### Development
