@@ -34,7 +34,7 @@ jobs:
       - run:
           name: Publish Crate
           command: |
-            if $CIRCLE_BRANCH != master; echo 0; else cargo login $CARGO_TOKEN && cargo package && cargo publish; fi
+            if $CIRCLE_BRANCH == master; cargo login $CARGO_TOKEN && cargo package && cargo publish; fi
       - save_cache:
           key: project-cache
           paths:
