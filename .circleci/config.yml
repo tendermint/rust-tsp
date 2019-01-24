@@ -32,13 +32,9 @@ jobs:
           name: Test
           command: rustup run stable cargo test
       - run:
-          branches:
-            only: dry-run
           name: Publish Crate
           command: |
-            cargo login $CARGO_TOKEN
-            cargo package
-            cargo publish
+            if $CIRCLE_BRANCH != master; echo 0; else cargo login $CARGO_TOKEN && cargo package && cargo publish; fi
       - save_cache:
           key: project-cache
           paths:
