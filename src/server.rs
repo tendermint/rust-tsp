@@ -8,6 +8,34 @@ use std::thread;
 
 use messages::abci::*;
 use stream::AbciStream;
+use std::os::unix::net::UnixListener;
+
+/// Creates the unix server and listens for connections from Tendermint
+pub fn serve_unix<A>(app: A, addr: &str) -> io::Result<()>
+where
+    A: Application + 'static + Send + Sync,
+{
+    let listener = UnixListener::bind(addr).unwrap();
+
+    // Wrap the app atomically and clone for each connection.
+    let app = Arc::new(Mutex::new(app));
+
+    for new_connection in listener.incoming() {
+        let app_instance = Arc::clone(&app);
+        match new_connection {
+            Ok(stream) => {
+                println!("Got connection! {:?}", stream);
+                thread::spawn(move || handle_stream(AbciStream::from(stream), &app_instance));
+            }
+            Err(err) => {
+                // We need all 3 connections...
+                panic!("Connection failed: {}", err);
+            }
+        }
+    }
+    drop(listener);
+    Ok(())
+}
 
 /// Creates the TCP server and listens for connections from Tendermint
 pub fn serve<A>(app: A, addr: SocketAddr) -> io::Result<()>

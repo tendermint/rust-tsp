@@ -35,6 +35,7 @@ pub use messages::merkle::*;
 pub use messages::types::*;
 
 use server::serve;
+use server::serve_unix;
 
 /// Main Trait for an ABCI application. Provides generic responses for all callbacks
 /// Override desired callbacks as needed.  Tendermint makes 3 TCP connections to the
@@ -114,3 +115,12 @@ where
 {
     serve(app, listen_addr).unwrap();
 }
+
+/// Setup the application and start the server using unix domain socket.
+pub fn run_unix<A>(listen_addr: &str, app: A)
+where
+    A: Application + 'static + Send + Sync,
+{
+    serve_unix(app, listen_addr).unwrap();
+}
+

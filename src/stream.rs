@@ -7,11 +7,13 @@ use std::fmt::{self, Debug, Formatter};
 use std::io;
 use std::io::{Read, Write};
 use std::net::TcpStream;
+use std::os::unix::net::UnixStream;
 
 /// Wraps a stream for easier testing.  Original code from tomtau
 pub enum StreamWrapper {
     Mocked(SharedMockStream),
     Tcp(TcpStream),
+    Unix(UnixStream),
 }
 
 impl io::Read for StreamWrapper {
@@ -19,6 +21,7 @@ impl io::Read for StreamWrapper {
         match *self {
             StreamWrapper::Mocked(ref mut s) => s.read(buf),
             StreamWrapper::Tcp(ref mut s) => s.read(buf),
+            StreamWrapper::Unix(ref mut s) => s.read(buf),
         }
     }
 }
@@ -28,6 +31,7 @@ impl io::Write for StreamWrapper {
         match *self {
             StreamWrapper::Mocked(ref mut s) => s.write(buf),
             StreamWrapper::Tcp(ref mut s) => s.write(buf),
+            StreamWrapper::Unix(ref mut s) => s.write(buf),
         }
     }
 
@@ -35,6 +39,7 @@ impl io::Write for StreamWrapper {
         match *self {
             StreamWrapper::Mocked(ref mut s) => s.flush(),
             StreamWrapper::Tcp(ref mut s) => s.flush(),
+            StreamWrapper::Unix(ref mut s) => s.flush(),
         }
     }
 }
@@ -49,6 +54,7 @@ impl Debug for AbciStream {
         match self.stream {
             StreamWrapper::Mocked(_) => Ok(f.debug_struct("SharedMockStream").finish()?),
             StreamWrapper::Tcp(ref s) => s.fmt(f),
+            StreamWrapper::Unix(ref s) => s.fmt(f),
         }
     }
 }
@@ -95,6 +101,14 @@ impl From<TcpStream> for AbciStream {
     fn from(stream: TcpStream) -> AbciStream {
         AbciStream {
             stream: StreamWrapper::Tcp(stream),
+        }
+    }
+}
+
+impl From<UnixStream> for AbciStream {
+    fn from(stream: UnixStream) -> AbciStream {
+        AbciStream {
+            stream: StreamWrapper::Unix(stream),
         }
     }
 }
