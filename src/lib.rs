@@ -123,4 +123,3 @@ where
 {
     serve_unix(app, listen_addr).unwrap();
 }
-

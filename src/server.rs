@@ -7,8 +7,8 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 
 use messages::abci::*;
-use stream::AbciStream;
 use std::os::unix::net::UnixListener;
+use stream::AbciStream;
 
 /// Creates the unix server and listens for connections from Tendermint
 pub fn serve_unix<A>(app: A, addr: &str) -> io::Result<()>
