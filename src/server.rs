@@ -10,6 +10,42 @@ use messages::abci::*;
 use std::os::unix::net::UnixListener;
 use stream::AbciStream;
 
+#[derive(Debug)]
+enum Address {
+    Unix(String),
+    Net(SocketAddr),
+}
+
+fn parse_addr(addr: &str) -> Option<Address> {
+    let local = addr.to_lowercase();
+    addr.find(':')
+        .map(|i| match &local[0..i] {
+            "tcp" => addr
+                .get(i + 3..)
+                .map(|s| s.parse().ok())
+                .and_then(|e| e)
+                .map(|s| Address::Net(s)),
+            "unix" => addr.get(i + 3..).map(|s| Address::Unix(String::from(s))),
+            _ => None,
+        })
+        .and_then(|e| e)
+}
+
+/// Creates the server and listens for connections from Tendermint
+pub fn serve<A>(app: A, addr: &str) -> io::Result<()>
+where
+    A: Application + 'static + Send + Sync,
+{
+    let addr = parse_addr(addr).ok_or(std::io::Error::new(
+        std::io::ErrorKind::Other,
+        "Wrong adderss",
+    ))?;
+    match addr {
+        Address::Unix(addr) => serve_unix(app, &addr),
+        Address::Net(addr) => serve_net(app, addr),
+    }
+}
+
 /// Creates the unix server and listens for connections from Tendermint
 pub fn serve_unix<A>(app: A, addr: &str) -> io::Result<()>
 where
@@ -38,7 +74,7 @@ where
 }
 
 /// Creates the TCP server and listens for connections from Tendermint
-pub fn serve<A>(app: A, addr: SocketAddr) -> io::Result<()>
+pub fn serve_net<A>(app: A, addr: SocketAddr) -> io::Result<()>
 where
     A: Application + 'static + Send + Sync,
 {

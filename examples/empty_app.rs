@@ -8,7 +8,7 @@ impl abci::Application for EmptyApp {}
 
 fn main() {
     // Use default local addr and Tendermint ABCI port
-    let addr = "127.0.0.1:26658".parse().unwrap();
+    let addr = "tcp://127.0.0.1:26658";
     // Fire it up!
     abci::run(addr, EmptyApp);
 }

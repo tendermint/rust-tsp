@@ -19,7 +19,6 @@
 //! }
 //!```
 //!
-use std::net::SocketAddr;
 
 extern crate bytes;
 extern crate integer_encoding;
@@ -35,7 +34,6 @@ pub use messages::merkle::*;
 pub use messages::types::*;
 
 use server::serve;
-use server::serve_unix;
 
 /// Main Trait for an ABCI application. Provides generic responses for all callbacks
 /// Override desired callbacks as needed.  Tendermint makes 3 TCP connections to the
@@ -104,22 +102,14 @@ pub fn run_local<A>(app: A)
 where
     A: Application + 'static + Send + Sync,
 {
-    let addr = "127.0.0.1:26658".parse().unwrap();
+    let addr = "tcp://127.0.0.1:26658";
     run(addr, app);
 }
 
 /// Setup the application and start the server. Use this fn when setting different ip:port.
-pub fn run<A>(listen_addr: SocketAddr, app: A)
+pub fn run<A>(listen_addr: &str, app: A)
 where
     A: Application + 'static + Send + Sync,
 {
     serve(app, listen_addr).unwrap();
-}
-
-/// Setup the application and start the server using unix domain socket.
-pub fn run_unix<A>(listen_addr: &str, app: A)
-where
-    A: Application + 'static + Send + Sync,
-{
-    serve_unix(app, listen_addr).unwrap();
 }
