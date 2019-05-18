@@ -11,6 +11,7 @@ use tokio::prelude::*;
 use Application;
 use codec::abci::ABCICodec;
 use messages::abci::*;
+use futures::future::ok;
 
 
 /// Creates the TCP server and listens for connections from Tendermint
@@ -38,8 +39,9 @@ pub fn serve<A>(app: A, addr: SocketAddr) -> io::Result<()>
 
             let writes = responses.fold(_writer, |writer, response| {
                 println!("Return Response! {:?}", response);
-                writer.send(response).and_then(move |writer| {
-                    // Workground for ABCI protocol
+                writer.send(response)
+                    .and_then(move |writer| {
+                    // workaround for ABCI protocol
                     let mut flush_response = Response::new();
                     flush_response.set_flush(ResponseFlush::new());
                     println!("Return Flush Response! {:?}", flush_response);
@@ -62,6 +64,8 @@ fn respond<A>(app: &Arc<Mutex<A>>, request: &Request) -> Response
     let app = guard.deref_mut();
 
     let mut response = Response::new();
+
+
     match request.value {
         // Info
         Some(Request_oneof_value::info(ref r)) => response.set_info(app.info(r)),
