@@ -19,22 +19,26 @@
 //! }
 //!```
 //!
-use std::net::SocketAddr;
-
 extern crate bytes;
+extern crate byteorder;
+extern crate futures;
 extern crate integer_encoding;
 extern crate mockstream;
 extern crate protobuf;
+extern crate tokio;
 
-mod messages;
-mod server;
-mod stream;
+use std::net::SocketAddr;
 
 pub use messages::abci::*;
 pub use messages::merkle::*;
 pub use messages::types::*;
-
 use server::serve;
+
+
+mod messages;
+mod server;
+mod stream;
+mod codec;
 
 /// Main Trait for an ABCI application. Provides generic responses for all callbacks
 /// Override desired callbacks as needed.  Tendermint makes 3 TCP connections to the
@@ -100,8 +104,8 @@ pub trait Application {
 
 /// Setup the app and start the server using localhost and default tendermint port 26658
 pub fn run_local<A>(app: A)
-where
-    A: Application + 'static + Send + Sync,
+    where
+        A: Application + 'static + Send + Sync,
 {
     let addr = "127.0.0.1:26658".parse().unwrap();
     run(addr, app);
@@ -109,8 +113,8 @@ where
 
 /// Setup the application and start the server. Use this fn when setting different ip:port.
 pub fn run<A>(listen_addr: SocketAddr, app: A)
-where
-    A: Application + 'static + Send + Sync,
+    where
+        A: Application + 'static + Send + Sync,
 {
     serve(app, listen_addr).unwrap();
 }
