@@ -8,16 +8,15 @@ use tokio::io;
 use tokio::net::TcpListener;
 use tokio::prelude::*;
 
-use Application;
 use codec::abci::ABCICodec;
-use messages::abci::*;
 use futures::future::ok;
-
+use messages::abci::*;
+use Application;
 
 /// Creates the TCP server and listens for connections from Tendermint
 pub fn serve<A>(app: A, addr: SocketAddr) -> io::Result<()>
-    where
-        A: Application + 'static + Send + Sync,
+where
+    A: Application + 'static + Send + Sync,
 {
     let listener = TcpListener::bind(&addr).unwrap();
     let incoming = listener.incoming();
@@ -30,7 +29,6 @@ pub fn serve<A>(app: A, addr: SocketAddr) -> io::Result<()>
             let (_writer, reader) = framed.split();
             let app_instance = Arc::clone(&app);
 
-
             let responses = reader.map(move |request| {
                 println!("Got Request! {:?}", request);
                 let response = respond(&app_instance, &request);
@@ -39,8 +37,7 @@ pub fn serve<A>(app: A, addr: SocketAddr) -> io::Result<()>
 
             let writes = responses.fold(_writer, |writer, response| {
                 println!("Return Response! {:?}", response);
-                writer.send(response)
-                    .and_then(move |writer| {
+                writer.send(response).and_then(move |writer| {
                     // workaround for ABCI protocol
                     let mut flush_response = Response::new();
                     flush_response.set_flush(ResponseFlush::new());
@@ -48,23 +45,20 @@ pub fn serve<A>(app: A, addr: SocketAddr) -> io::Result<()>
                     writer.send(flush_response)
                 })
             });
-            tokio::spawn(
-                writes.then(|_| Ok(()))
-            )
+            tokio::spawn(writes.then(|_| Ok(())))
         });
     tokio::run(server);
     Ok(())
 }
 
 fn respond<A>(app: &Arc<Mutex<A>>, request: &Request) -> Response
-    where
-        A: Application + 'static + Send + Sync,
+where
+    A: Application + 'static + Send + Sync,
 {
     let mut guard = app.lock().unwrap();
     let app = guard.deref_mut();
 
     let mut response = Response::new();
-
 
     match request.value {
         // Info

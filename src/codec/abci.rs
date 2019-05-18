@@ -22,12 +22,11 @@ impl Decoder for ABCICodec {
 
     fn decode(&mut self, buf: &mut BytesMut) -> io::Result<Option<Request>> {
         let length = buf.len();
-        if length == 0  {
+        if length == 0 {
             return Ok(None);
         }
         let varint: (i64, usize) = i64::decode_var(&buf[..]);
-        let message = protobuf::parse_from_bytes(
-            &buf[varint.1..(varint.0 as usize + varint.1)]);
+        let message = protobuf::parse_from_bytes(&buf[varint.1..(varint.0 as usize + varint.1)]);
         buf.split_to(length);
         Ok(message.ok())
     }
