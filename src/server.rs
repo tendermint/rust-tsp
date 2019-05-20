@@ -9,7 +9,6 @@ use tokio::net::TcpListener;
 use tokio::prelude::*;
 
 use codec::abci::ABCICodec;
-use futures::future::ok;
 use messages::abci::*;
 use Application;
 
@@ -37,13 +36,7 @@ where
 
             let writes = responses.fold(_writer, |writer, response| {
                 println!("Return Response! {:?}", response);
-                writer.send(response).and_then(move |writer| {
-                    // workaround for ABCI protocol
-                    let mut flush_response = Response::new();
-                    flush_response.set_flush(ResponseFlush::new());
-                    println!("Return Flush Response! {:?}", flush_response);
-                    writer.send(flush_response)
-                })
+                writer.send(response)
             });
             tokio::spawn(writes.then(|_| Ok(())))
         });

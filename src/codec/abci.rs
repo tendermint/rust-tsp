@@ -26,8 +26,11 @@ impl Decoder for ABCICodec {
             return Ok(None);
         }
         let varint: (i64, usize) = i64::decode_var(&buf[..]);
+        if varint.0 as usize + varint.1 > length {
+            return Ok(None);
+        }
         let message = protobuf::parse_from_bytes(&buf[varint.1..(varint.0 as usize + varint.1)]);
-        buf.split_to(length);
+        buf.split_to(varint.0 as usize + varint.1);
         Ok(message.ok())
     }
 }
@@ -42,8 +45,9 @@ impl Encoder for ABCICodec {
         let msg_len: i64 = msg_to_vec.len() as i64;
         let varint = i64::encode_var_vec(msg_len);
         buf.put(&varint);
+        buf.reserve(1 + msg_len as usize);
         msg.write_to_writer(&mut buf.writer()).unwrap();
-        println!("response {:?}", &buf[..]);
+        println!("Encode response! {:?}", &buf[..]);
         Ok(())
     }
 }
