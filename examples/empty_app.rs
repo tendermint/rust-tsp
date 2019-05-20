@@ -1,6 +1,7 @@
 extern crate abci;
 
 // Simple example that responds with defaults to Tendermint
+#[derive(Clone, Copy)]
 struct EmptyApp;
 
 // Implement the Application and use default responses

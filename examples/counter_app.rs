@@ -6,6 +6,7 @@ use byteorder::{BigEndian, ByteOrder};
 
 // Simple counter application.  Its only state is a u64 count
 // We use BigEndian to serialize the data across transactions calls
+#[derive(Clone, Copy)]
 struct CounterApp {
     count: u64,
 }

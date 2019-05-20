@@ -104,7 +104,7 @@ pub trait Application {
 /// Setup the app and start the server using localhost and default tendermint port 26658
 pub fn run_local<A>(app: A)
 where
-    A: Application + 'static + Send + Sync,
+    A: Application + 'static + Send + Sync + Copy,
 {
     let addr = "127.0.0.1:26658".parse().unwrap();
     run(addr, app);
@@ -113,7 +113,7 @@ where
 /// Setup the application and start the server. Use this fn when setting different ip:port.
 pub fn run<A>(listen_addr: SocketAddr, app: A)
 where
-    A: Application + 'static + Send + Sync,
+    A: Application + 'static + Send + Sync + Copy,
 {
     serve(app, listen_addr).unwrap();
 }
