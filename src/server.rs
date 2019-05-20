@@ -1,5 +1,4 @@
 use std::net::SocketAddr;
-use std::ops::DerefMut;
 
 use tokio;
 use tokio::codec::Decoder;
