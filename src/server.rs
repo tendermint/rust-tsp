@@ -1,4 +1,6 @@
 use std::net::SocketAddr;
+use std::ops::DerefMut;
+use std::sync::{Arc, Mutex};
 
 use tokio;
 use tokio::codec::Decoder;
@@ -13,20 +15,22 @@ use Application;
 /// Creates the TCP server and listens for connections from Tendermint
 pub fn serve<A>(app: A, addr: SocketAddr) -> io::Result<()>
 where
-    A: Application + 'static + Send + Sync + Copy,
+    A: Application + 'static + Send + Sync,
 {
     let listener = TcpListener::bind(&addr).unwrap();
     let incoming = listener.incoming();
+    let app = Arc::new(Mutex::new(app));
     let server = incoming
         .map_err(|err| println!("Connection failed: {}", err))
         .for_each(move |socket| {
             println!("Got connection! {:?}", socket);
             let framed = ABCICodec::new().framed(socket);
             let (_writer, reader) = framed.split();
+            let app_instance = Arc::clone(&app);
 
             let responses = reader.map(move |request| {
                 println!("Got Request! {:?}", request);
-                let response = respond(app, &request);
+                let response = respond(&app_instance, &request);
                 return response;
             });
 
@@ -40,10 +44,13 @@ where
     Ok(())
 }
 
-fn respond<A>(mut app: A, request: &Request) -> Response
+fn respond<A>(app: &Arc<Mutex<A>>, request: &Request) -> Response
 where
-    A: Application + 'static + Send + Sync + Copy,
+    A: Application + 'static + Send + Sync,
 {
+    let mut guard = app.lock().unwrap();
+    let app = guard.deref_mut();
+
     let mut response = Response::new();
 
     match request.value {
