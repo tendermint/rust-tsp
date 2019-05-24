@@ -1,6 +1,6 @@
 	Version string = TMCoreSemVer
 	// TMCoreSemVer is the current version of Tendermint Core.
-	TMCoreSemVer = "0.26.4"
+	TMCoreSemVer = "0.31.0"
 	// ABCISemVer is the semantic version of the ABCI library
-	ABCISemVer  = "0.15.0"
+	ABCISemVer  = "0.16.0"
 	ABCIVersion = ABCISemVer

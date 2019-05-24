@@ -9,8 +9,8 @@ protocol](https://tendermint.com/docs/spec/abci/) and can be used to write ABCI
 applications for [Tendermint](https://github.com/tendermint/tendermint/).
 
 ## Supported Version
-- Tendermint 0.26.4
-- ABCI 0.15.0
+- Tendermint 0.31.0
+- ABCI 0.16.0
 
 ## Installation
 

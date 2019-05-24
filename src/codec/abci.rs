@@ -47,7 +47,7 @@ impl Encoder for ABCICodec {
         buf.put(&varint);
         buf.reserve(1 + msg_len as usize);
         msg.write_to_writer(&mut buf.writer()).unwrap();
-        println!("Encode response! {:?}", &buf[..]);
+        info!("Encode response! {:?}", &buf[..]);
         Ok(())
     }
 }

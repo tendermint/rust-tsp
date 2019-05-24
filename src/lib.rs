@@ -21,8 +21,11 @@
 //!
 extern crate byteorder;
 extern crate bytes;
+extern crate env_logger;
 extern crate futures;
 extern crate integer_encoding;
+#[macro_use]
+extern crate log;
 extern crate mockstream;
 extern crate protobuf;
 extern crate tokio;

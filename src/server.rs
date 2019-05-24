@@ -2,6 +2,7 @@ use std::net::SocketAddr;
 use std::ops::DerefMut;
 use std::sync::{Arc, Mutex};
 
+use env_logger::Env;
 use tokio;
 use tokio::codec::Decoder;
 use tokio::io;
@@ -17,25 +18,26 @@ pub fn serve<A>(app: A, addr: SocketAddr) -> io::Result<()>
 where
     A: Application + 'static + Send + Sync,
 {
+    env_logger::from_env(Env::default().default_filter_or("info")).init();
     let listener = TcpListener::bind(&addr).unwrap();
     let incoming = listener.incoming();
     let app = Arc::new(Mutex::new(app));
     let server = incoming
-        .map_err(|err| println!("Connection failed: {}", err))
+        .map_err(|err| panic!("Connection failed: {}", err))
         .for_each(move |socket| {
-            println!("Got connection! {:?}", socket);
+            info!("Got connection! {:?}", socket);
             let framed = ABCICodec::new().framed(socket);
             let (_writer, reader) = framed.split();
             let app_instance = Arc::clone(&app);
 
             let responses = reader.map(move |request| {
-                println!("Got Request! {:?}", request);
+                info!("Got Request! {:?}", request);
                 let response = respond(&app_instance, &request);
                 return response;
             });
 
             let writes = responses.fold(_writer, |writer, response| {
-                println!("Return Response! {:?}", response);
+                info!("Return Response! {:?}", response);
                 writer.send(response)
             });
             tokio::spawn(writes.then(|_| Ok(())))
