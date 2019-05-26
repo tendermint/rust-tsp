@@ -9,7 +9,7 @@ use tokio::io;
 use tokio::net::TcpListener;
 use tokio::prelude::*;
 
-use codec::abci::ABCICodec;
+use codec::ABCICodec;
 use messages::abci::*;
 use Application;
 

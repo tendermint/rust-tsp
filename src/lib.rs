@@ -26,6 +26,7 @@ extern crate futures;
 extern crate integer_encoding;
 #[macro_use]
 extern crate log;
+extern crate core;
 extern crate mockstream;
 extern crate protobuf;
 extern crate tokio;
@@ -40,7 +41,6 @@ use server::serve;
 mod codec;
 mod messages;
 mod server;
-mod stream;
 
 /// Main Trait for an ABCI application. Provides generic responses for all callbacks
 /// Override desired callbacks as needed.  Tendermint makes 3 TCP connections to the
