@@ -1,8 +1,10 @@
 extern crate abci;
 extern crate byteorder;
+extern crate env_logger;
 
 use abci::*;
 use byteorder::{BigEndian, ByteOrder};
+use env_logger::Env;
 
 // Simple counter application.  Its only state is a u64 count
 // We use BigEndian to serialize the data across transactions calls
@@ -69,5 +71,6 @@ impl abci::Application for CounterApp {
 
 fn main() {
     // Run on localhost using default Tendermint port
+    env_logger::from_env(Env::default().default_filter_or("info")).init();
     abci::run_local(CounterApp::new());
 }

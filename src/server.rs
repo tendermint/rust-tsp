@@ -15,7 +15,9 @@ pub fn serve<A>(app: A, addr: SocketAddr) -> io::Result<()>
 where
     A: Application + 'static + Send + Sync,
 {
-    env_logger::from_env(Env::default().default_filter_or("info")).init();
+    env_logger::from_env(Env::default().default_filter_or("info"))
+        .try_init()
+        .ok();
     let listener = TcpListener::bind(addr).unwrap();
 
     // Wrap the app atomically and clone for each connection.
