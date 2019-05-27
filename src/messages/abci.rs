@@ -7550,7 +7550,7 @@ impl ::protobuf::reflect::ProtobufValue for ResponseCommit {
 #[derive(PartialEq,Clone,Default)]
 pub struct ConsensusParams {
     // message fields
-    pub block_size: ::protobuf::SingularPtrField<BlockSizeParams>,
+    pub block: ::protobuf::SingularPtrField<BlockParams>,
     pub evidence: ::protobuf::SingularPtrField<EvidenceParams>,
     pub validator: ::protobuf::SingularPtrField<ValidatorParams>,
     // special fields
@@ -7563,37 +7563,37 @@ impl ConsensusParams {
         ::std::default::Default::default()
     }
 
-    // .abci.BlockSizeParams block_size = 1;
+    // .abci.BlockParams block = 1;
 
-    pub fn clear_block_size(&mut self) {
-        self.block_size.clear();
+    pub fn clear_block(&mut self) {
+        self.block.clear();
     }
 
-    pub fn has_block_size(&self) -> bool {
-        self.block_size.is_some()
+    pub fn has_block(&self) -> bool {
+        self.block.is_some()
     }
 
     // Param is passed by value, moved
-    pub fn set_block_size(&mut self, v: BlockSizeParams) {
-        self.block_size = ::protobuf::SingularPtrField::some(v);
+    pub fn set_block(&mut self, v: BlockParams) {
+        self.block = ::protobuf::SingularPtrField::some(v);
     }
 
     // Mutable pointer to the field.
     // If field is not initialized, it is initialized with default value first.
-    pub fn mut_block_size(&mut self) -> &mut BlockSizeParams {
-        if self.block_size.is_none() {
-            self.block_size.set_default();
+    pub fn mut_block(&mut self) -> &mut BlockParams {
+        if self.block.is_none() {
+            self.block.set_default();
         }
-        self.block_size.as_mut().unwrap()
+        self.block.as_mut().unwrap()
     }
 
     // Take field
-    pub fn take_block_size(&mut self) -> BlockSizeParams {
-        self.block_size.take().unwrap_or_else(|| BlockSizeParams::new())
+    pub fn take_block(&mut self) -> BlockParams {
+        self.block.take().unwrap_or_else(|| BlockParams::new())
     }
 
-    pub fn get_block_size(&self) -> &BlockSizeParams {
-        self.block_size.as_ref().unwrap_or_else(|| BlockSizeParams::default_instance())
+    pub fn get_block(&self) -> &BlockParams {
+        self.block.as_ref().unwrap_or_else(|| BlockParams::default_instance())
     }
 
     // .abci.EvidenceParams evidence = 2;
@@ -7665,7 +7665,7 @@ impl ConsensusParams {
 
 impl ::protobuf::Message for ConsensusParams {
     fn is_initialized(&self) -> bool {
-        for v in &self.block_size {
+        for v in &self.block {
             if !v.is_initialized() {
                 return false;
             }
@@ -7688,7 +7688,7 @@ impl ::protobuf::Message for ConsensusParams {
             let (field_number, wire_type) = is.read_tag_unpack()?;
             match field_number {
                 1 => {
-                    ::protobuf::rt::read_singular_message_into(wire_type, is, &mut self.block_size)?;
+                    ::protobuf::rt::read_singular_message_into(wire_type, is, &mut self.block)?;
                 },
                 2 => {
                     ::protobuf::rt::read_singular_message_into(wire_type, is, &mut self.evidence)?;
@@ -7708,7 +7708,7 @@ impl ::protobuf::Message for ConsensusParams {
     #[allow(unused_variables)]
     fn compute_size(&self) -> u32 {
         let mut my_size = 0;
-        if let Some(ref v) = self.block_size.as_ref() {
+        if let Some(ref v) = self.block.as_ref() {
             let len = v.compute_size();
             my_size += 1 + ::protobuf::rt::compute_raw_varint32_size(len) + len;
         }
@@ -7726,7 +7726,7 @@ impl ::protobuf::Message for ConsensusParams {
     }
 
     fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream) -> ::protobuf::ProtobufResult<()> {
-        if let Some(ref v) = self.block_size.as_ref() {
+        if let Some(ref v) = self.block.as_ref() {
             os.write_tag(1, ::protobuf::wire_format::WireTypeLengthDelimited)?;
             os.write_raw_varint32(v.get_cached_size())?;
             v.write_to_with_cached_sizes(os)?;
@@ -7783,10 +7783,10 @@ impl ::protobuf::Message for ConsensusParams {
         unsafe {
             descriptor.get(|| {
                 let mut fields = ::std::vec::Vec::new();
-                fields.push(::protobuf::reflect::accessor::make_singular_ptr_field_accessor::<_, ::protobuf::types::ProtobufTypeMessage<BlockSizeParams>>(
-                    "block_size",
-                    |m: &ConsensusParams| { &m.block_size },
-                    |m: &mut ConsensusParams| { &mut m.block_size },
+                fields.push(::protobuf::reflect::accessor::make_singular_ptr_field_accessor::<_, ::protobuf::types::ProtobufTypeMessage<BlockParams>>(
+                    "block",
+                    |m: &ConsensusParams| { &m.block },
+                    |m: &mut ConsensusParams| { &mut m.block },
                 ));
                 fields.push(::protobuf::reflect::accessor::make_singular_ptr_field_accessor::<_, ::protobuf::types::ProtobufTypeMessage<EvidenceParams>>(
                     "evidence",
@@ -7820,7 +7820,7 @@ impl ::protobuf::Message for ConsensusParams {
 
 impl ::protobuf::Clear for ConsensusParams {
     fn clear(&mut self) {
-        self.clear_block_size();
+        self.clear_block();
         self.clear_evidence();
         self.clear_validator();
         self.unknown_fields.clear();
@@ -7840,7 +7840,7 @@ impl ::protobuf::reflect::ProtobufValue for ConsensusParams {
 }
 
 #[derive(PartialEq,Clone,Default)]
-pub struct BlockSizeParams {
+pub struct BlockParams {
     // message fields
     pub max_bytes: i64,
     pub max_gas: i64,
@@ -7849,8 +7849,8 @@ pub struct BlockSizeParams {
     pub cached_size: ::protobuf::CachedSize,
 }
 
-impl BlockSizeParams {
-    pub fn new() -> BlockSizeParams {
+impl BlockParams {
+    pub fn new() -> BlockParams {
         ::std::default::Default::default()
     }
 
@@ -7885,7 +7885,7 @@ impl BlockSizeParams {
     }
 }
 
-impl ::protobuf::Message for BlockSizeParams {
+impl ::protobuf::Message for BlockParams {
     fn is_initialized(&self) -> bool {
         true
     }
@@ -7968,8 +7968,8 @@ impl ::protobuf::Message for BlockSizeParams {
         Self::descriptor_static()
     }
 
-    fn new() -> BlockSizeParams {
-        BlockSizeParams::new()
+    fn new() -> BlockParams {
+        BlockParams::new()
     }
 
     fn descriptor_static() -> &'static ::protobuf::reflect::MessageDescriptor {
@@ -7982,16 +7982,16 @@ impl ::protobuf::Message for BlockSizeParams {
                 let mut fields = ::std::vec::Vec::new();
                 fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeInt64>(
                     "max_bytes",
-                    |m: &BlockSizeParams| { &m.max_bytes },
-                    |m: &mut BlockSizeParams| { &mut m.max_bytes },
+                    |m: &BlockParams| { &m.max_bytes },
+                    |m: &mut BlockParams| { &mut m.max_bytes },
                 ));
                 fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeInt64>(
                     "max_gas",
-                    |m: &BlockSizeParams| { &m.max_gas },
-                    |m: &mut BlockSizeParams| { &mut m.max_gas },
+                    |m: &BlockParams| { &m.max_gas },
+                    |m: &mut BlockParams| { &mut m.max_gas },
                 ));
-                ::protobuf::reflect::MessageDescriptor::new::<BlockSizeParams>(
-                    "BlockSizeParams",
+                ::protobuf::reflect::MessageDescriptor::new::<BlockParams>(
+                    "BlockParams",
                     fields,
                     file_descriptor_proto()
                 )
@@ -7999,18 +7999,18 @@ impl ::protobuf::Message for BlockSizeParams {
         }
     }
 
-    fn default_instance() -> &'static BlockSizeParams {
-        static mut instance: ::protobuf::lazy::Lazy<BlockSizeParams> = ::protobuf::lazy::Lazy {
+    fn default_instance() -> &'static BlockParams {
+        static mut instance: ::protobuf::lazy::Lazy<BlockParams> = ::protobuf::lazy::Lazy {
             lock: ::protobuf::lazy::ONCE_INIT,
-            ptr: 0 as *const BlockSizeParams,
+            ptr: 0 as *const BlockParams,
         };
         unsafe {
-            instance.get(BlockSizeParams::new)
+            instance.get(BlockParams::new)
         }
     }
 }
 
-impl ::protobuf::Clear for BlockSizeParams {
+impl ::protobuf::Clear for BlockParams {
     fn clear(&mut self) {
         self.clear_max_bytes();
         self.clear_max_gas();
@@ -8018,13 +8018,13 @@ impl ::protobuf::Clear for BlockSizeParams {
     }
 }
 
-impl ::std::fmt::Debug for BlockSizeParams {
+impl ::std::fmt::Debug for BlockParams {
     fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         ::protobuf::text_format::fmt(self, f)
     }
 }
 
-impl ::protobuf::reflect::ProtobufValue for BlockSizeParams {
+impl ::protobuf::reflect::ProtobufValue for BlockParams {
     fn as_ref(&self) -> ::protobuf::reflect::ProtobufValueRef {
         ::protobuf::reflect::ProtobufValueRef::Message(self)
     }
@@ -11242,50 +11242,50 @@ static file_descriptor_proto_data: &'static [u8] = b"\
     \x15.abci.ValidatorUpdateB\x02\x18\0\x12:\n\x17consensus_param_updates\
     \x18\x02\x20\x01(\x0b2\x15.abci.ConsensusParamsB\x02\x18\0\x12\x20\n\x04\
     tags\x18\x03\x20\x03(\x0b2\x0e.common.KVPairB\x02\x18\0\"\"\n\x0eRespons\
-    eCommit\x12\x10\n\x04data\x18\x02\x20\x01(\x0cB\x02\x18\0\"\x9a\x01\n\
-    \x0fConsensusParams\x12-\n\nblock_size\x18\x01\x20\x01(\x0b2\x15.abci.Bl\
-    ockSizeParamsB\x02\x18\0\x12*\n\x08evidence\x18\x02\x20\x01(\x0b2\x14.ab\
-    ci.EvidenceParamsB\x02\x18\0\x12,\n\tvalidator\x18\x03\x20\x01(\x0b2\x15\
-    .abci.ValidatorParamsB\x02\x18\0\"=\n\x0fBlockSizeParams\x12\x15\n\tmax_\
-    bytes\x18\x01\x20\x01(\x03B\x02\x18\0\x12\x13\n\x07max_gas\x18\x02\x20\
-    \x01(\x03B\x02\x18\0\"%\n\x0eEvidenceParams\x12\x13\n\x07max_age\x18\x01\
-    \x20\x01(\x03B\x02\x18\0\",\n\x0fValidatorParams\x12\x19\n\rpub_key_type\
-    s\x18\x01\x20\x03(\tB\x02\x18\0\"F\n\x0eLastCommitInfo\x12\x11\n\x05roun\
-    d\x18\x01\x20\x01(\x05B\x02\x18\0\x12!\n\x05votes\x18\x02\x20\x03(\x0b2\
-    \x0e.abci.VoteInfoB\x02\x18\0\"\xd8\x03\n\x06Header\x12\"\n\x07version\
-    \x18\x01\x20\x01(\x0b2\r.abci.VersionB\x02\x18\0\x12\x14\n\x08chain_id\
-    \x18\x02\x20\x01(\tB\x02\x18\0\x12\x12\n\x06height\x18\x03\x20\x01(\x03B\
-    \x02\x18\0\x12,\n\x04time\x18\x04\x20\x01(\x0b2\x1a.google.protobuf.Time\
-    stampB\x02\x18\0\x12\x13\n\x07num_txs\x18\x05\x20\x01(\x03B\x02\x18\0\
-    \x12\x15\n\ttotal_txs\x18\x06\x20\x01(\x03B\x02\x18\0\x12(\n\rlast_block\
-    _id\x18\x07\x20\x01(\x0b2\r.abci.BlockIDB\x02\x18\0\x12\x1c\n\x10last_co\
-    mmit_hash\x18\x08\x20\x01(\x0cB\x02\x18\0\x12\x15\n\tdata_hash\x18\t\x20\
-    \x01(\x0cB\x02\x18\0\x12\x1b\n\x0fvalidators_hash\x18\n\x20\x01(\x0cB\
-    \x02\x18\0\x12\x20\n\x14next_validators_hash\x18\x0b\x20\x01(\x0cB\x02\
-    \x18\0\x12\x1a\n\x0econsensus_hash\x18\x0c\x20\x01(\x0cB\x02\x18\0\x12\
-    \x14\n\x08app_hash\x18\r\x20\x01(\x0cB\x02\x18\0\x12\x1d\n\x11last_resul\
-    ts_hash\x18\x0e\x20\x01(\x0cB\x02\x18\0\x12\x19\n\revidence_hash\x18\x0f\
-    \x20\x01(\x0cB\x02\x18\0\x12\x1c\n\x10proposer_address\x18\x10\x20\x01(\
-    \x0cB\x02\x18\0\"-\n\x07Version\x12\x11\n\x05Block\x18\x01\x20\x01(\x04B\
-    \x02\x18\0\x12\x0f\n\x03App\x18\x02\x20\x01(\x04B\x02\x18\0\"J\n\x07Bloc\
-    kID\x12\x10\n\x04hash\x18\x01\x20\x01(\x0cB\x02\x18\0\x12-\n\x0cparts_he\
-    ader\x18\x02\x20\x01(\x0b2\x13.abci.PartSetHeaderB\x02\x18\0\"4\n\rPartS\
-    etHeader\x12\x11\n\x05total\x18\x01\x20\x01(\x05B\x02\x18\0\x12\x10\n\
-    \x04hash\x18\x02\x20\x01(\x0cB\x02\x18\0\"3\n\tValidator\x12\x13\n\x07ad\
-    dress\x18\x01\x20\x01(\x0cB\x02\x18\0\x12\x11\n\x05power\x18\x03\x20\x01\
-    (\x03B\x02\x18\0\"G\n\x0fValidatorUpdate\x12!\n\x07pub_key\x18\x01\x20\
-    \x01(\x0b2\x0c.abci.PubKeyB\x02\x18\0\x12\x11\n\x05power\x18\x02\x20\x01\
-    (\x03B\x02\x18\0\"Q\n\x08VoteInfo\x12&\n\tvalidator\x18\x01\x20\x01(\x0b\
-    2\x0f.abci.ValidatorB\x02\x18\0\x12\x1d\n\x11signed_last_block\x18\x02\
-    \x20\x01(\x08B\x02\x18\0\",\n\x06PubKey\x12\x10\n\x04type\x18\x01\x20\
-    \x01(\tB\x02\x18\0\x12\x10\n\x04data\x18\x02\x20\x01(\x0cB\x02\x18\0\"\
-    \xa6\x01\n\x08Evidence\x12\x10\n\x04type\x18\x01\x20\x01(\tB\x02\x18\0\
-    \x12&\n\tvalidator\x18\x02\x20\x01(\x0b2\x0f.abci.ValidatorB\x02\x18\0\
-    \x12\x12\n\x06height\x18\x03\x20\x01(\x03B\x02\x18\0\x12,\n\x04time\x18\
-    \x04\x20\x01(\x0b2\x1a.google.protobuf.TimestampB\x02\x18\0\x12\x1e\n\
-    \x12total_voting_power\x18\x05\x20\x01(\x03B\x02\x18\0B\x1c\xe0\xe2\x1e\
-    \x01\xc8\xe2\x1e\x01\xa8\xe2\x1e\x01\xd0\xe2\x1e\x01\xc0\xe3\x1e\x01\xf8\
-    \xe1\x1e\x01\xb8\xe2\x1e\x01b\x06proto3\
+    eCommit\x12\x10\n\x04data\x18\x02\x20\x01(\x0cB\x02\x18\0\"\x91\x01\n\
+    \x0fConsensusParams\x12$\n\x05block\x18\x01\x20\x01(\x0b2\x11.abci.Block\
+    ParamsB\x02\x18\0\x12*\n\x08evidence\x18\x02\x20\x01(\x0b2\x14.abci.Evid\
+    enceParamsB\x02\x18\0\x12,\n\tvalidator\x18\x03\x20\x01(\x0b2\x15.abci.V\
+    alidatorParamsB\x02\x18\0\"9\n\x0bBlockParams\x12\x15\n\tmax_bytes\x18\
+    \x01\x20\x01(\x03B\x02\x18\0\x12\x13\n\x07max_gas\x18\x02\x20\x01(\x03B\
+    \x02\x18\0\"%\n\x0eEvidenceParams\x12\x13\n\x07max_age\x18\x01\x20\x01(\
+    \x03B\x02\x18\0\",\n\x0fValidatorParams\x12\x19\n\rpub_key_types\x18\x01\
+    \x20\x03(\tB\x02\x18\0\"F\n\x0eLastCommitInfo\x12\x11\n\x05round\x18\x01\
+    \x20\x01(\x05B\x02\x18\0\x12!\n\x05votes\x18\x02\x20\x03(\x0b2\x0e.abci.\
+    VoteInfoB\x02\x18\0\"\xd8\x03\n\x06Header\x12\"\n\x07version\x18\x01\x20\
+    \x01(\x0b2\r.abci.VersionB\x02\x18\0\x12\x14\n\x08chain_id\x18\x02\x20\
+    \x01(\tB\x02\x18\0\x12\x12\n\x06height\x18\x03\x20\x01(\x03B\x02\x18\0\
+    \x12,\n\x04time\x18\x04\x20\x01(\x0b2\x1a.google.protobuf.TimestampB\x02\
+    \x18\0\x12\x13\n\x07num_txs\x18\x05\x20\x01(\x03B\x02\x18\0\x12\x15\n\tt\
+    otal_txs\x18\x06\x20\x01(\x03B\x02\x18\0\x12(\n\rlast_block_id\x18\x07\
+    \x20\x01(\x0b2\r.abci.BlockIDB\x02\x18\0\x12\x1c\n\x10last_commit_hash\
+    \x18\x08\x20\x01(\x0cB\x02\x18\0\x12\x15\n\tdata_hash\x18\t\x20\x01(\x0c\
+    B\x02\x18\0\x12\x1b\n\x0fvalidators_hash\x18\n\x20\x01(\x0cB\x02\x18\0\
+    \x12\x20\n\x14next_validators_hash\x18\x0b\x20\x01(\x0cB\x02\x18\0\x12\
+    \x1a\n\x0econsensus_hash\x18\x0c\x20\x01(\x0cB\x02\x18\0\x12\x14\n\x08ap\
+    p_hash\x18\r\x20\x01(\x0cB\x02\x18\0\x12\x1d\n\x11last_results_hash\x18\
+    \x0e\x20\x01(\x0cB\x02\x18\0\x12\x19\n\revidence_hash\x18\x0f\x20\x01(\
+    \x0cB\x02\x18\0\x12\x1c\n\x10proposer_address\x18\x10\x20\x01(\x0cB\x02\
+    \x18\0\"-\n\x07Version\x12\x11\n\x05Block\x18\x01\x20\x01(\x04B\x02\x18\
+    \0\x12\x0f\n\x03App\x18\x02\x20\x01(\x04B\x02\x18\0\"J\n\x07BlockID\x12\
+    \x10\n\x04hash\x18\x01\x20\x01(\x0cB\x02\x18\0\x12-\n\x0cparts_header\
+    \x18\x02\x20\x01(\x0b2\x13.abci.PartSetHeaderB\x02\x18\0\"4\n\rPartSetHe\
+    ader\x12\x11\n\x05total\x18\x01\x20\x01(\x05B\x02\x18\0\x12\x10\n\x04has\
+    h\x18\x02\x20\x01(\x0cB\x02\x18\0\"3\n\tValidator\x12\x13\n\x07address\
+    \x18\x01\x20\x01(\x0cB\x02\x18\0\x12\x11\n\x05power\x18\x03\x20\x01(\x03\
+    B\x02\x18\0\"G\n\x0fValidatorUpdate\x12!\n\x07pub_key\x18\x01\x20\x01(\
+    \x0b2\x0c.abci.PubKeyB\x02\x18\0\x12\x11\n\x05power\x18\x02\x20\x01(\x03\
+    B\x02\x18\0\"Q\n\x08VoteInfo\x12&\n\tvalidator\x18\x01\x20\x01(\x0b2\x0f\
+    .abci.ValidatorB\x02\x18\0\x12\x1d\n\x11signed_last_block\x18\x02\x20\
+    \x01(\x08B\x02\x18\0\",\n\x06PubKey\x12\x10\n\x04type\x18\x01\x20\x01(\t\
+    B\x02\x18\0\x12\x10\n\x04data\x18\x02\x20\x01(\x0cB\x02\x18\0\"\xa6\x01\
+    \n\x08Evidence\x12\x10\n\x04type\x18\x01\x20\x01(\tB\x02\x18\0\x12&\n\tv\
+    alidator\x18\x02\x20\x01(\x0b2\x0f.abci.ValidatorB\x02\x18\0\x12\x12\n\
+    \x06height\x18\x03\x20\x01(\x03B\x02\x18\0\x12,\n\x04time\x18\x04\x20\
+    \x01(\x0b2\x1a.google.protobuf.TimestampB\x02\x18\0\x12\x1e\n\x12total_v\
+    oting_power\x18\x05\x20\x01(\x03B\x02\x18\0B\x1c\xb8\xe2\x1e\x01\xe0\xe2\
+    \x1e\x01\xc0\xe3\x1e\x01\xa8\xe2\x1e\x01\xc8\xe2\x1e\x01\xd0\xe2\x1e\x01\
+    \xf8\xe1\x1e\x01b\x06proto3\
 ";
 
 static mut file_descriptor_proto_lazy: ::protobuf::lazy::Lazy<::protobuf::descriptor::FileDescriptorProto> = ::protobuf::lazy::Lazy {
