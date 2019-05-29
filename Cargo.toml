@@ -1,6 +1,6 @@
 [package]
 name = "abci"
-version = "0.5.2"
+version = "0.5.3"
 authors = ["Adrian Brink <adrian@brink-holdings.com>", "Jackson Lewis <st.japa6@gmail.com>", "Dave Bryson", "Tomas Tauber"]
 license = "MIT/Apache-2.0"
 description = "Tendermint ABCI server for Rust"
@@ -18,6 +18,8 @@ integer-encoding = "1.0.5"
 mockstream = "0.0.3"
 log = "0.4.6"
 env_logger = "0.6.1"
+tokio = "0.1"
+futures = "0.1"
 
 [build-dependencies]
 protobuf-codegen-pure = "2.2.0"
