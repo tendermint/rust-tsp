@@ -1,14 +1,17 @@
-use Application;
-
-use env_logger::Env;
-use std::io;
-use std::net::*;
+use std::net::SocketAddr;
 use std::ops::DerefMut;
 use std::sync::{Arc, Mutex};
-use std::thread;
 
+use env_logger::Env;
+use tokio;
+use tokio::codec::Decoder;
+use tokio::io;
+use tokio::net::TcpListener;
+use tokio::prelude::*;
+
+use codec::ABCICodec;
 use messages::abci::*;
-use stream::AbciStream;
+use Application;
 
 /// Creates the TCP server and listens for connections from Tendermint
 pub fn serve<A>(app: A, addr: SocketAddr) -> io::Result<()>
@@ -18,50 +21,42 @@ where
     env_logger::from_env(Env::default().default_filter_or("info"))
         .try_init()
         .ok();
-    let listener = TcpListener::bind(addr).unwrap();
-
-    // Wrap the app atomically and clone for each connection.
+    let listener = TcpListener::bind(&addr).unwrap();
+    let incoming = listener.incoming();
     let app = Arc::new(Mutex::new(app));
+    let server = incoming
+        .map_err(|err| panic!("Connection failed: {}", err))
+        .for_each(move |socket| {
+            info!("Got connection! {:?}", socket);
+            let framed = ABCICodec::new().framed(socket);
+            let (_writer, reader) = framed.split();
+            let app_instance = Arc::clone(&app);
 
-    for new_connection in listener.incoming() {
-        let app_instance = Arc::clone(&app);
-        match new_connection {
-            Ok(stream) => {
-                info!("Got connection! {:?}", stream);
-                thread::spawn(move || handle_stream(AbciStream::from(stream), &app_instance));
-            }
-            Err(err) => {
-                // We need all 3 connections...
-                panic!("Connection failed: {}", err);
-            }
-        }
-    }
-    drop(listener);
+            let responses = reader.map(move |request| {
+                info!("Got Request! {:?}", request);
+                let response = respond(&app_instance, &request);
+                return response;
+            });
+
+            let writes = responses.fold(_writer, |writer, response| {
+                info!("Return Response! {:?}", response);
+                writer.send(response)
+            });
+            tokio::spawn(writes.then(|_| Ok(())))
+        });
+    tokio::run(server);
     Ok(())
 }
 
-fn handle_stream<A>(mut stream: AbciStream, app: &Arc<Mutex<A>>)
+fn respond<A>(app: &Arc<Mutex<A>>, request: &Request) -> Response
 where
     A: Application + 'static + Send + Sync,
 {
-    loop {
-        match stream.read_request() {
-            Some(req) => {
-                let mut guard = app.lock().unwrap();
-                let a = guard.deref_mut();
-                respond(&mut stream, a, &req).unwrap();
-            }
-            _ => break,
-        }
-    }
-    info!("Connection closed on {:?}", stream);
-}
+    let mut guard = app.lock().unwrap();
+    let app = guard.deref_mut();
 
-fn respond<A>(stream: &mut AbciStream, app: &mut A, request: &Request) -> io::Result<()>
-where
-    A: Application + 'static + Send + Sync,
-{
     let mut response = Response::new();
+
     match request.value {
         // Info
         Some(Request_oneof_value::info(ref r)) => response.set_info(app.info(r)),
@@ -98,7 +93,5 @@ where
             response.set_exception(re)
         }
     }
-
-    stream.write_response(&response)?;
-    Ok(())
+    response
 }

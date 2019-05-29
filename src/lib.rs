@@ -19,26 +19,28 @@
 //! }
 //!```
 //!
-use std::net::SocketAddr;
-
+extern crate byteorder;
 extern crate bytes;
+extern crate env_logger;
+extern crate futures;
 extern crate integer_encoding;
-extern crate mockstream;
-extern crate protobuf;
-
 #[macro_use]
 extern crate log;
-extern crate env_logger;
+extern crate core;
+extern crate mockstream;
+extern crate protobuf;
+extern crate tokio;
 
-mod messages;
-mod server;
-mod stream;
+use std::net::SocketAddr;
 
 pub use messages::abci::*;
 pub use messages::merkle::*;
 pub use messages::types::*;
-
 use server::serve;
+
+mod codec;
+mod messages;
+mod server;
 
 /// Main Trait for an ABCI application. Provides generic responses for all callbacks
 /// Override desired callbacks as needed.  Tendermint makes 3 TCP connections to the
