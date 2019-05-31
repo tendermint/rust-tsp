@@ -1,4 +1,7 @@
-version: 2
+version: 2.1
+
+orbs:
+  codecov: codecov/codecov@1.0.4
 
 jobs:
   build:
@@ -18,14 +21,17 @@ jobs:
           name: Check Linting
           command: |
             rustup component add clippy
-            cargo clippy 
+            cargo clippy
+      - codecov/upload:
+          file: coverage/*.json
+          flags: rust-abci
       - run:
           name: Nightly Build
           command: |
             rustup toolchain install nightly
             rustup run nightly rustc --version --verbose
             rustup run nightly cargo --version --verbose
-            rustup run nightly cargo build 
+            rustup run nightly cargo build
       - run:
           name: Stable Build
           command: |
