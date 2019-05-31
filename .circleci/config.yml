@@ -1,57 +1,47 @@
-# Orb 'codecov/codecov@1.0.4' resolved to 'codecov/codecov@1.0.4'
 version: 2
+
 jobs:
   build:
     docker:
-    - image: circleci/rust:latest
+      - image: circleci/rust:latest
     steps:
-    - checkout
-    - restore_cache:
-        key: project-cache
-    - run:
-        name: Check formatting
-        command: |
-          rustup component add rustfmt-preview
-          rustfmt --version
-          cargo fmt -- --check --color=auto
-    - run:
-        name: Check Linting
-        command: |
-          rustup component add clippy
-          cargo clippy
-    - run:
-        name: Upload Coverage Results
-        command: "bash <(curl -s https://codecov.io/bash) \\\n  -f coverage/*.json\
-          \ \\\n  -n ${CIRCLE_BUILD_NUM} \\\n  -t ${CODECOV_TOKEN} \\\n  -y .codecov.yml\
-          \ \\\n   -F rust-abci  \\\n  \n"
-    - run:
-        name: Nightly Build
-        command: |
-          rustup toolchain install nightly
-          rustup run nightly rustc --version --verbose
-          rustup run nightly cargo --version --verbose
-          rustup run nightly cargo build
-    - run:
-        name: Stable Build
-        command: |
-          rustup toolchain install stable
-          rustup run stable rustc --version --verbose
-          rustup run stable cargo --version --verbose
-          rustup run stable cargo build
-    - run:
-        name: Test
-        command: rustup run stable cargo test
-    - run:
-        name: Publish Crate
-        command: |
-          if [ $CIRCLE_BRANCH == master ]; then cargo login $CARGO_TOKEN && cargo package --allow-dirty && cargo publish --allow-dirty; fi
-    - save_cache:
-        key: project-cache
-        paths:
-        - ~/.cargo
-        - ./target
-workflows:
-  version: 2
-  workflow:
-    jobs:
-    - build
+      - checkout
+      - restore_cache:
+          key: project-cache
+      - run:
+          name: Check formatting
+          command: |
+            rustup component add rustfmt-preview
+            rustfmt --version
+            cargo fmt -- --check --color=auto
+      - run:
+          name: Check Linting
+          command: |
+            rustup component add clippy
+            cargo clippy
+      - run:
+          name: Nightly Build
+          command: |
+            rustup toolchain install nightly
+            rustup run nightly rustc --version --verbose
+            rustup run nightly cargo --version --verbose
+            rustup run nightly cargo build
+      - run:
+          name: Stable Build
+          command: |
+            rustup toolchain install stable
+            rustup run stable rustc --version --verbose
+            rustup run stable cargo --version --verbose
+            rustup run stable cargo build
+      - run:
+          name: Test
+          command: rustup run stable cargo test
+      - run:
+          name: Publish Crate
+          command: |
+            if [ $CIRCLE_BRANCH == master ]; then cargo login $CARGO_TOKEN && cargo package --allow-dirty && cargo publish --allow-dirty; fi
+      - save_cache:
+          key: project-cache
+          paths:
+            - "~/.cargo"
+            - "./target"
