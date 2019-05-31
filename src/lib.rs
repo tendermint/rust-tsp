@@ -27,7 +27,6 @@ extern crate integer_encoding;
 #[macro_use]
 extern crate log;
 extern crate core;
-extern crate mockstream;
 extern crate protobuf;
 extern crate tokio;
 

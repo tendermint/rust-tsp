@@ -41,7 +41,7 @@ impl Encoder for ABCICodec {
 
     fn encode(&mut self, msg: Response, buf: &mut BytesMut) -> Result<(), Box<Error>> {
         let msg_len = msg.compute_size();
-        let varint = i64::encode_var_vec(msg_len as i64);
+        let varint = i64::encode_var_vec(i64::from(msg_len));
 
         let remaining = buf.remaining_mut();
         let needed = msg_len as usize + varint.len();

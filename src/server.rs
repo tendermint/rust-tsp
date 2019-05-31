@@ -34,8 +34,7 @@ where
 
             let responses = reader.map(move |request| {
                 info!("Got Request! {:?}", request);
-                let response = respond(&app_instance, &request);
-                return response;
+                respond(&app_instance, &request)
             });
 
             let writes = responses.fold(_writer, |writer, response| {
