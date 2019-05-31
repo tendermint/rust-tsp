@@ -15,12 +15,17 @@ jobs:
             rustfmt --version
             cargo fmt -- --check --color=auto
       - run:
+          name: Check Linting
+          command: |
+            rustup component add clippy
+            cargo clippy 
+      - run:
           name: Nightly Build
           command: |
             rustup toolchain install nightly
             rustup run nightly rustc --version --verbose
             rustup run nightly cargo --version --verbose
-            rustup run nightly cargo build
+            rustup run nightly cargo build 
       - run:
           name: Stable Build
           command: |

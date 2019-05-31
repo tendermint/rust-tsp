@@ -43,6 +43,7 @@ The code should follow [Rust Style Guide](https://github.com/rust-lang/rfcs/tree
 Before opening a Pull Request please run the checks below:
 
 * Install rustfmt: `rustup component add rustfmt`
+* Install clippy: `rustup component add clippy`
 
 ### Testing 
 
@@ -55,6 +56,12 @@ Run the test suite with
 Make sure your code is well-formatted by running
 
 ```cargo fmt```
+
+### Lint (clippy)
+
+Lint your code (i.e. check it for common issues) with:
+
+```cargo clippy```
 
 ## License
 
