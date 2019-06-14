@@ -12,7 +12,7 @@ include = ["src/**/*", "Cargo.toml"]
 
 [dependencies]
 bytes = "0.4"
-protobuf = "2.6.1"
+protobuf = "2.6.2"
 byteorder = "1.2.7"
 integer-encoding = "1.0.5"
 log = "0.4.6"
