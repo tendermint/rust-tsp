@@ -21,4 +21,4 @@ tokio = "0.1"
 futures = "0.1"
 
 [build-dependencies]
-protobuf-codegen-pure = "2.6.1"
+protobuf-codegen-pure = "2.6.2"
