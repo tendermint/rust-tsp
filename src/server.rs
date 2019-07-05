@@ -33,12 +33,12 @@ where
             let app_instance = Arc::clone(&app);
 
             let responses = reader.map(move |request| {
-                info!("Got Request! {:?}", request);
+                debug!("Got Request! {:?}", request);
                 respond(&app_instance, &request)
             });
 
             let writes = responses.fold(_writer, |writer, response| {
-                info!("Return Response! {:?}", response);
+                debug!("Return Response! {:?}", response);
                 writer.send(response)
             });
             tokio::spawn(writes.then(|_| Ok(())))
