@@ -3,7 +3,7 @@
 Tendermint ABCI server, written in Rust programming language.
 
 [![Current Version](https://meritbadge.herokuapp.com/abci)](https://crates.io/crates/abci)
-[![](https://tokei.rs/b1/github/tendermint/rust-abci)](https://github.com/tendermint/rust-abci) 
+[![](https://tokei.rs/b1/github/tendermint/rust-abci)](https://github.com/tendermint/rust-abci)
 [![CircleCI](https://circleci.com/gh/tendermint/rust-abci/tree/master.svg?style=shield)](https://circleci.com/gh/tendermint/rust-abci/tree/master)
 
 This library implements the [ABCI
@@ -11,6 +11,7 @@ protocol](https://tendermint.com/docs/spec/abci/) and can be used to write ABCI
 applications for [Tendermint](https://github.com/tendermint/tendermint/).
 
 ## Supported Version
+
 - Tendermint 0.32.0
 - ABCI 0.16.0
 
@@ -32,12 +33,12 @@ To use this library to build your own ABCI apps in Rust you have to include the 
 
 ```toml
 [dependencies]
-abci = "0.4.3"
+abci = "0.6.0"
 ```
 
 ### Development
 
-This crate already contains the compiled ABCI protobuf messages.  If you want to update protobuf messages to a newer version of Tendermint. Run `make update-proto`
+This crate already contains the compiled ABCI protobuf messages. If you want to update protobuf messages to a newer version of Tendermint. Run `make update-proto`
 
 ## Running the examples
 
@@ -59,6 +60,13 @@ curl localhost:26657/broadcast_tx_commit?tx=0x02
 ```
 
 For a real life example of an ABCI application you can checkout [Cosmos SDK](https://github.com/cosmos/cosmos-sdk) or [Ethermint](https://github.com/cosmos/ethermint).
+
+#### Tendermint Compatibility Table
+
+| Tendermint | Rust-abci |
+| ---------- | :-------: |
+| 0.32       |   0.6.0   |
+| 0.31.7     |   0.5.4   |
 
 ## Documentation
 
