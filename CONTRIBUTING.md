@@ -77,11 +77,10 @@ pull-request that includes an update to the `CHANGELOG.md` file.
 Changelog entries should be formatted as follows:
 
 ```
-- [module] \#xxx Some description about the change (@contributor)
+- \#xxx Some description about the change (@contributor)
 ```
 
-Here, `module` is the part of the code that changed (typically a
-top-level Go package), `xxx` is the pull-request number, and `contributor`
+Here, `xxx` is the pull-request number, and `contributor`
 is the author/s of the change.
 
 It's also acceptable for `xxx` to refer to the relevent issue number, but pull-request
@@ -91,8 +90,7 @@ be updated with the pull-request's number.
 There is no need to include the full link, as this will be added
 automatically during release. But please include the backslash and pound, eg. `\#2313`.
 
-Changelog entries should be ordered alphabetically according to the
-`module`, and numerically according to the pull-request number.
+Changelog entries should be numerically according to the pull-request number.
 
 Changes with multiple classifications should be doubly included (eg. a bug fix
 that is also a breaking change should be recorded under both).
