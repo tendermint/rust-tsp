@@ -18,9 +18,9 @@ impl ABCICodec {
 
 impl Decoder for ABCICodec {
     type Item = Request;
-    type Error = Box<Error>;
+    type Error = Box<dyn Error>;
 
-    fn decode(&mut self, buf: &mut BytesMut) -> Result<Option<Request>, Box<Error>> {
+    fn decode(&mut self, buf: &mut BytesMut) -> Result<Option<Request>, Box<dyn Error>> {
         let length = buf.len();
         if length == 0 {
             return Ok(None);
@@ -37,9 +37,9 @@ impl Decoder for ABCICodec {
 
 impl Encoder for ABCICodec {
     type Item = Response;
-    type Error = Box<Error>;
+    type Error = Box<dyn Error>;
 
-    fn encode(&mut self, msg: Response, buf: &mut BytesMut) -> Result<(), Box<Error>> {
+    fn encode(&mut self, msg: Response, buf: &mut BytesMut) -> Result<(), Box<dyn Error>> {
         let msg_len = msg.compute_size();
         let varint = i64::encode_var_vec(i64::from(msg_len));
 
@@ -60,7 +60,7 @@ impl Encoder for ABCICodec {
 mod tests {
     use super::*;
 
-    fn setup_echo_request_buf() -> Result<BytesMut, Box<Error>> {
+    fn setup_echo_request_buf() -> Result<BytesMut, Box<dyn Error>> {
         let buf = &mut BytesMut::new();
 
         let mut r = Request::new();
@@ -78,7 +78,7 @@ mod tests {
         Ok(buf.take())
     }
 
-    fn setup_echo_large_request_buf() -> Result<BytesMut, Box<Error>> {
+    fn setup_echo_large_request_buf() -> Result<BytesMut, Box<dyn Error>> {
         let buf = &mut BytesMut::new();
 
         let mut r = Request::new();
