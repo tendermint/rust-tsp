@@ -5,7 +5,7 @@ use integer_encoding::VarInt;
 use protobuf::Message;
 use tokio::codec::{Decoder, Encoder};
 
-use messages::abci::*;
+use crate::messages::abci::*;
 
 #[derive(Debug)]
 pub struct ABCICodec;

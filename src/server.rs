@@ -9,9 +9,9 @@ use tokio::io;
 use tokio::net::TcpListener;
 use tokio::prelude::*;
 
-use codec::ABCICodec;
-use messages::abci::*;
-use Application;
+use crate::codec::ABCICodec;
+use crate::messages::abci::*;
+use crate::Application;
 
 /// Creates the TCP server and listens for connections from Tendermint
 pub fn serve<A>(app: A, addr: SocketAddr) -> io::Result<()>

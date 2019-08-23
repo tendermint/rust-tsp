@@ -32,10 +32,10 @@ extern crate tokio;
 
 use std::net::SocketAddr;
 
-pub use messages::abci::*;
-pub use messages::merkle::*;
-pub use messages::types::*;
-use server::serve;
+pub use crate::messages::abci::*;
+pub use crate::messages::merkle::*;
+pub use crate::messages::types::*;
+use crate::server::serve;
 
 mod codec;
 mod messages;
