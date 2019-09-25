@@ -32,7 +32,7 @@ To use this library to build your own ABCI apps in Rust you have to include the 
 
 ```toml
 [dependencies]
-abci = "0.6.1"
+abci = "0.6.2"
 ```
 
 ### Development
@@ -64,7 +64,7 @@ For a real life example of an ABCI application you can checkout [Cosmos SDK](htt
 
 | Tendermint | Rust-abci |
 | ---------- | :-------: |
-| 0.32.2     |   0.6.1   |
+| 0.32.2     |   0.6.2   |
 | 0.31.7     |   0.5.4   |
 
 ## Documentation
