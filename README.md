@@ -1,6 +1,6 @@
 # Rust ABCI
 
-Tendermint ABCI server, written in Rust programming language.
+Tendermint ABCI server, written in the Rust programming language.
 
 [![Current Version](https://meritbadge.herokuapp.com/abci)](https://crates.io/crates/abci)
 [![](https://tokei.rs/b1/github/tendermint/rust-abci)](https://github.com/tendermint/rust-abci)
