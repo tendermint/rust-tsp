@@ -31,7 +31,7 @@ fn convert_tx(tx: &[u8]) -> u64 {
 
 impl abci::Application for CounterApp {
     // Validate transactions.  Rule:  Transactions must be incremental: 1,2,3,4...
-    fn check_tx(&mut self, req: &RequestCheckTx) -> ResponseCheckTx {
+    fn check_tx(&mut self, req: RequestCheckTx, responder: Responder) {
         // Get the Tx [u8] and convert to u64
         let c = convert_tx(req.get_tx());
         let mut resp = ResponseCheckTx::new();
@@ -40,24 +40,29 @@ impl abci::Application for CounterApp {
         if c != self.count + 1 {
             resp.set_code(1);
             resp.set_log(String::from("Count must be incremental!"));
-            return resp;
+        } else {
+            // Update state to keep state correct for next check_tx call
+            self.count = c;
         }
 
-        // Update state to keep state correct for next check_tx call
-        self.count = c;
-        resp
+        let mut response = Response::new();
+        response.set_check_tx(resp);
+        let _ = responder.respond(response);
     }
 
-    fn deliver_tx(&mut self, req: &RequestDeliverTx) -> ResponseDeliverTx {
+    fn deliver_tx(&mut self, req: RequestDeliverTx, responder: Responder) {
         // Get the Tx [u8]
         let c = convert_tx(req.get_tx());
         // Update state
         self.count = c;
         // Return default code 0 == bueno
-        ResponseDeliverTx::new()
+        let res = ResponseDeliverTx::new();
+        let mut response = Response::new();
+        response.set_deliver_tx(res);
+        let _ = responder.respond(response);
     }
 
-    fn commit(&mut self, _req: &RequestCommit) -> ResponseCommit {
+    fn commit(&mut self, _req: RequestCommit, responder: Responder) {
         // Create the response
         let mut resp = ResponseCommit::new();
         // Convert count to bits
@@ -65,7 +70,9 @@ impl abci::Application for CounterApp {
         BigEndian::write_u64(&mut buf, self.count);
         // Set data so last state is included in the block
         resp.set_data(buf.to_vec());
-        resp
+        let mut response = Response::new();
+        response.set_commit(resp);
+        let _ = responder.respond(response);
     }
 }
 

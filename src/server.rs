@@ -1,96 +1,133 @@
-use std::net::SocketAddr;
-use std::ops::DerefMut;
-use std::sync::{Arc, Mutex};
-
+use crossbeam_channel::Sender;
 use env_logger::Env;
+use std::net::SocketAddr;
 use tokio;
 use tokio::codec::Decoder;
 use tokio::io;
-use tokio::net::TcpListener;
+use tokio::net::{tcp::Incoming, TcpListener};
 use tokio::prelude::*;
+use tokio::runtime::current_thread;
+use tokio::sync::oneshot;
 
 use crate::codec::ABCICodec;
 use crate::messages::abci::*;
-use crate::Application;
+use crate::{run_protocol, Application, ExitSignal};
 
 /// Creates the TCP server and listens for connections from Tendermint
 pub fn serve<A>(app: A, addr: SocketAddr) -> io::Result<()>
 where
-    A: Application + 'static + Send + Sync,
+    A: Application,
 {
     env_logger::from_env(Env::default().default_filter_or("info"))
         .try_init()
         .ok();
     let listener = TcpListener::bind(&addr).unwrap();
+    let (exit_sender, exit_receiver) = oneshot::channel();
+    let protocol_sender = run_protocol(app, exit_sender);
     let incoming = listener.incoming();
-    let app = Arc::new(Mutex::new(app));
-    let server = incoming
-        .map_err(|err| panic!("Connection failed: {}", err))
-        .for_each(move |socket| {
-            info!("Got connection! {:?}", socket);
-            let framed = ABCICodec::new().framed(socket);
-            let (_writer, reader) = framed.split();
-            let app_instance = Arc::clone(&app);
+    let mut runtime = current_thread::Runtime::new().expect("To start a runtime");
+    let server = Server {
+        runtime_handle: runtime.handle(),
+        incoming,
+        protocol_sender,
+        exit_receiver,
+    };
 
-            let responses = reader.map(move |request| {
-                debug!("Got Request! {:?}", request);
-                respond(&app_instance, &request)
-            });
-
-            let writes = responses.fold(_writer, |writer, response| {
-                debug!("Return Response! {:?}", response);
-                writer.send(response)
-            });
-            tokio::spawn(writes.then(|_| Ok(())))
-        });
-    tokio::run(server);
+    runtime
+        .block_on(server)
+        .expect("Runtime to block on server");
     Ok(())
 }
 
-fn respond<A>(app: &Arc<Mutex<A>>, request: &Request) -> Response
-where
-    A: Application + 'static + Send + Sync,
-{
-    let mut guard = app.lock().unwrap();
-    let app = guard.deref_mut();
+struct Server {
+    runtime_handle: current_thread::Handle,
+    incoming: Incoming,
+    protocol_sender: Sender<(Request, oneshot::Sender<Response>)>,
+    exit_receiver: oneshot::Receiver<ExitSignal>,
+}
 
-    let mut response = Response::new();
+struct Connection {
+    runtime_handle: current_thread::Handle,
+    protocol_sender: Sender<(Request, oneshot::Sender<Response>)>,
+    response_receiver: oneshot::Receiver<Response>,
+    response_sender: Option<oneshot::Sender<Response>>,
+    writer: Option<stream::SplitSink<tokio::codec::Framed<tokio::net::TcpStream, ABCICodec>>>,
+    reader: Option<stream::SplitStream<tokio::codec::Framed<tokio::net::TcpStream, ABCICodec>>>,
+}
 
-    match request.value {
-        // Info
-        Some(Request_oneof_value::info(ref r)) => response.set_info(app.info(r)),
-        // Init chain
-        Some(Request_oneof_value::init_chain(ref r)) => response.set_init_chain(app.init_chain(r)),
-        // Set option
-        Some(Request_oneof_value::set_option(ref r)) => response.set_set_option(app.set_option(r)),
-        // Query
-        Some(Request_oneof_value::query(ref r)) => response.set_query(app.query(r)),
-        // Check tx
-        Some(Request_oneof_value::check_tx(ref r)) => response.set_check_tx(app.check_tx(r)),
-        // Begin block
-        Some(Request_oneof_value::begin_block(ref r)) => {
-            response.set_begin_block(app.begin_block(r))
+impl Future for Server {
+    type Item = ();
+    type Error = ();
+
+    fn poll(&mut self) -> Result<Async<Self::Item>, Self::Error> {
+        match self.exit_receiver.poll() {
+            Ok(Async::Ready(_)) => return Ok(Async::Ready(())),
+            Ok(Async::NotReady) => {}
+            Err(_) => return Err(()),
         }
-        // Deliver Tx
-        Some(Request_oneof_value::deliver_tx(ref r)) => response.set_deliver_tx(app.deliver_tx(r)),
-        // End block
-        Some(Request_oneof_value::end_block(ref r)) => response.set_end_block(app.end_block(r)),
-        // Commit
-        Some(Request_oneof_value::commit(ref r)) => response.set_commit(app.commit(r)),
-        // Flush
-        Some(Request_oneof_value::flush(_)) => response.set_flush(ResponseFlush::new()),
-        // Echo
-        Some(Request_oneof_value::echo(ref r)) => {
-            let echo_msg = r.get_message().to_string();
-            let mut echo = ResponseEcho::new();
-            echo.set_message(echo_msg);
-            response.set_echo(echo);
+        match self.incoming.poll() {
+            Ok(Async::Ready(Some(socket))) => {
+                let framed = ABCICodec::new().framed(socket);
+                let (writer, reader) = framed.split();
+                let (sender, response_receiver) = oneshot::channel();
+                let connection = Connection {
+                    runtime_handle: self.runtime_handle.clone(),
+                    protocol_sender: self.protocol_sender.clone(),
+                    response_receiver,
+                    response_sender: Some(sender),
+                    writer: Some(writer),
+                    reader: Some(reader),
+                };
+                self.runtime_handle
+                    .spawn(connection.then(|_| Ok(())))
+                    .expect("To spawn a connection");
+            }
+            Ok(Async::NotReady) => {}
+            Err(_) | Ok(Async::Ready(None)) => {
+                // Connection closed, I assume this will drop the Server struct,
+                // which will also shutdown the protocol thread,
+                // when all protocol senders drop.
+                return Ok(Async::Ready(()));
+            }
         }
-        _ => {
-            let mut re = ResponseException::new();
-            re.set_error(String::from("Unrecognized request"));
-            response.set_exception(re)
-        }
+        Ok(Async::NotReady)
     }
-    response
+}
+
+impl Future for Connection {
+    type Item = ();
+    type Error = ();
+
+    fn poll(&mut self) -> Result<Async<Self::Item>, Self::Error> {
+        if let Some(reader) = &mut self.reader {
+            match reader.poll() {
+                Ok(Async::Ready(Some(request))) => {
+                    let _ = self.protocol_sender.send((
+                        request,
+                        self.response_sender.take().expect("To have a sender"),
+                    ));
+                    self.reader = None;
+                }
+                Ok(Async::Ready(None)) => {
+                    self.reader = None;
+                }
+                Ok(Async::NotReady) => return Ok(Async::NotReady),
+                Err(_) => return Err(()),
+            }
+        }
+        if self.writer.is_some() {
+            match self.response_receiver.poll() {
+                Ok(Async::Ready(response)) => {
+                    let writer = self.writer.take().expect("To have a writer");
+                    let writes = writer.send(response);
+                    self.runtime_handle
+                        .spawn(writes.then(|_| Ok(())))
+                        .expect("To spawn a writer");
+                }
+                Ok(Async::NotReady) => return Ok(Async::NotReady),
+                Err(_) => return Err(()),
+            }
+        }
+        Ok(Async::Ready(()))
+    }
 }
