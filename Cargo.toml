@@ -1,6 +1,6 @@
 [package]
 name = "abci"
-version = "0.6.2"
+version = "0.6.3"
 authors = ["Adrian Brink <adrian@brink-holdings.com>", "Jackson Lewis <st.japa6@gmail.com>", "Dave Bryson", "Tomas Tauber"]
 edition = "2018"
 license = "MIT/Apache-2.0"
