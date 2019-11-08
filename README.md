@@ -66,7 +66,6 @@ For a real life example of an ABCI application you can checkout [Cosmos SDK](htt
 | Tendermint | Rust-abci |
 | ---------- | :-------: |
 | 0.32.7     |   0.6.3   |
-| 0.32.2     |   0.6.2   |
 | 0.31.7     |   0.5.4   |
 
 ## Documentation
