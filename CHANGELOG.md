@@ -1,5 +1,15 @@
 # CHANGELOG
 
+_November 18, 2019_
+
+Special thanks to external contributors on this release: @yihuang
+
+## v0.6.4
+
+### IMPROVEMENTS:
+
+- [\#100](https://github.com/tendermint/rust-abci/pull/100): worker panic propagated to the abci process
+
 _November 11, 2019_
 
 ## v0.6.3
