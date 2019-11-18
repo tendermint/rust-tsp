@@ -8,6 +8,7 @@ use tokio::codec::Decoder;
 use tokio::io;
 use tokio::net::TcpListener;
 use tokio::prelude::*;
+use tokio::runtime;
 
 use crate::codec::ABCICodec;
 use crate::messages::abci::*;
@@ -43,7 +44,15 @@ where
             });
             tokio::spawn(writes.then(|_| Ok(())))
         });
-    tokio::run(server);
+
+    let mut rt = runtime::Builder::new()
+        .panic_handler(|_err| {
+            std::process::exit(1);
+            // std::panic::resume_unwind(err);
+        })
+        .build()
+        .unwrap();
+    rt.block_on(server).unwrap();
     Ok(())
 }
 
