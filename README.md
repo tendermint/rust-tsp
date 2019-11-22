@@ -82,7 +82,7 @@ Please read, understand and adhere to our [code of conduct](./CODE_OF_CONDUCT.md
 
 ## Credits
 
-- [Jackson Lewis](https://github.com/JacksonCoder)
+- [Jackson Lewis](https://github.com/InquisitivePenguin)
 - [Dave Bryson](https://github.com/davebryson)
 
 Original `rust-tsp` made by [Adrian Brink](https://github.com/adrianbrink).
