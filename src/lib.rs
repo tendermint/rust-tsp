@@ -14,7 +14,7 @@
 //!
 //! impl abci::Application for EmptyApp {}
 //!
-//! fn main() {
+//! fn run_empty_app() {
 //!     abci::run_local(EmptyApp);
 //! }
 //!```
