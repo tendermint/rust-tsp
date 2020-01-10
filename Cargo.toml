@@ -1,25 +1,38 @@
 [package]
 name = "abci"
-version = "0.6.5"
+version = "0.7.0"
 authors = ["Adrian Brink <adrian@brink-holdings.com>", "Jackson Lewis <st.japa6@gmail.com>", "Dave Bryson", "Tomas Tauber"]
 edition = "2018"
 license = "MIT/Apache-2.0"
 description = "Tendermint ABCI server for Rust"
 homepage = "https://tendermint.com/docs/spec/abci/"
 repository = "https://github.com/tendermint/rust-abci"
+categories = ["network-programming"]
 keywords = ["abci", "tendermint", "blockchain", "rust"]
 readme = "README.md"
 include = ["src/**/*", "Cargo.toml"]
 
+[package.metadata.docs.rs]
+features = ["doc"]
+rustdoc-args = ["--cfg", "feature=\"doc\""]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
 [dependencies]
-bytes = "0.4"
-protobuf = "= 2.10.0"
-byteorder = "1.3.2"
-integer-encoding = "1.0.5"
-log = "0.4.8"
-env_logger = "0.7.0"
-tokio = { version = "0.1", default-features = false, features = ["codec", "io", "tcp", "rt-full"] }
-futures = "0.3"
+log = "0.4"
+protobuf = "2.10"
+integer-encoding = "1.0"
+async-trait = "0.1"
+async-std = { version = "1.5", optional = true }
+tokio = { version = "0.2", optional = true, features = ["io-util", "sync", "tcp", "stream", "rt-core", "uds"] }
+
+[dev-dependencies]
+env_logger = "0.7"
+tokio = { version = "0.2", features = ["macros"] }
 
 [build-dependencies]
-protobuf-codegen-pure = "= 2.10.0"
+protobuf-codegen-pure = "2.10"
+
+[features]
+default = ["tokio"]
+doc = []

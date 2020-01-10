@@ -1,105 +1,285 @@
-use std::net::SocketAddr;
-use std::ops::DerefMut;
-use std::sync::{Arc, Mutex};
+#[cfg(unix)]
+use std::path::PathBuf;
+use std::{io::Result, net::SocketAddr, sync::Arc};
 
-use env_logger::Env;
-use tokio;
-use tokio::codec::Decoder;
-use tokio::io;
-use tokio::net::TcpListener;
-use tokio::prelude::*;
-use tokio::runtime;
+#[cfg(all(unix, feature = "async-std"))]
+use async_std::os::unix::net::UnixListener;
+#[cfg(feature = "async-std")]
+use async_std::{
+    io::{Read, Write},
+    net::TcpListener,
+    prelude::*,
+    sync::Mutex,
+    task::spawn,
+};
+#[cfg(all(unix, feature = "tokio"))]
+use tokio::net::UnixListener;
+#[cfg(feature = "tokio")]
+use tokio::{
+    io::{AsyncRead as Read, AsyncWrite as Write},
+    net::TcpListener,
+    spawn,
+    stream::StreamExt,
+    sync::Mutex,
+};
 
-use crate::codec::ABCICodec;
-use crate::messages::abci::*;
-use crate::Application;
+use crate::{
+    proto::{abci::*, decode, encode},
+    Consensus, Info, Mempool,
+};
 
-/// Creates the TCP server and listens for connections from Tendermint
-pub fn serve<A>(app: A, addr: SocketAddr) -> io::Result<()>
+/// ABCI Server
+pub struct Server<C, M, I>
 where
-    A: Application + 'static + Send + Sync,
+    C: Consensus + 'static,
+    M: Mempool + 'static,
+    I: Info + 'static,
 {
-    env_logger::from_env(Env::default().default_filter_or("info"))
-        .try_init()
-        .ok();
-    let listener = TcpListener::bind(&addr).unwrap();
-    let incoming = listener.incoming();
-    let app = Arc::new(Mutex::new(app));
-    let server = incoming
-        .map_err(|err| panic!("Connection failed: {}", err))
-        .for_each(move |socket| {
-            info!("Got connection! {:?}", socket);
-            let framed = ABCICodec::new().framed(socket);
-            let (_writer, reader) = framed.split();
-            let app_instance = Arc::clone(&app);
-
-            let responses = reader.map(move |request| {
-                debug!("Got Request! {:?}", request);
-                respond(&app_instance, &request)
-            });
-
-            let writes = responses.fold(_writer, |writer, response| {
-                debug!("Return Response! {:?}", response);
-                writer.send(response)
-            });
-            tokio::spawn(writes.then(|_| Ok(())))
-        });
-
-    let mut rt = runtime::Builder::new()
-        .panic_handler(|_err| {
-            std::process::exit(1);
-            // std::panic::resume_unwind(err);
-        })
-        .build()
-        .unwrap();
-    rt.block_on(server).unwrap();
-    Ok(())
+    pub(crate) consensus: Arc<C>,
+    pub(crate) mempool: Arc<M>,
+    pub(crate) info: Arc<I>,
+    pub(crate) consensus_state: Arc<Mutex<ConsensusState>>,
 }
 
-fn respond<A>(app: &Arc<Mutex<A>>, request: &Request) -> Response
+impl<C, M, I> Server<C, M, I>
 where
-    A: Application + 'static + Send + Sync,
+    C: Consensus + 'static,
+    M: Mempool + 'static,
+    I: Info + 'static,
 {
-    let mut guard = app.lock().unwrap();
-    let app = guard.deref_mut();
-
-    let mut response = Response::new();
-
-    match request.value {
-        // Info
-        Some(Request_oneof_value::info(ref r)) => response.set_info(app.info(r)),
-        // Init chain
-        Some(Request_oneof_value::init_chain(ref r)) => response.set_init_chain(app.init_chain(r)),
-        // Set option
-        Some(Request_oneof_value::set_option(ref r)) => response.set_set_option(app.set_option(r)),
-        // Query
-        Some(Request_oneof_value::query(ref r)) => response.set_query(app.query(r)),
-        // Check tx
-        Some(Request_oneof_value::check_tx(ref r)) => response.set_check_tx(app.check_tx(r)),
-        // Begin block
-        Some(Request_oneof_value::begin_block(ref r)) => {
-            response.set_begin_block(app.begin_block(r))
-        }
-        // Deliver Tx
-        Some(Request_oneof_value::deliver_tx(ref r)) => response.set_deliver_tx(app.deliver_tx(r)),
-        // End block
-        Some(Request_oneof_value::end_block(ref r)) => response.set_end_block(app.end_block(r)),
-        // Commit
-        Some(Request_oneof_value::commit(ref r)) => response.set_commit(app.commit(r)),
-        // Flush
-        Some(Request_oneof_value::flush(_)) => response.set_flush(ResponseFlush::new()),
-        // Echo
-        Some(Request_oneof_value::echo(ref r)) => {
-            let echo_msg = r.get_message().to_string();
-            let mut echo = ResponseEcho::new();
-            echo.set_message(echo_msg);
-            response.set_echo(echo);
-        }
-        _ => {
-            let mut re = ResponseException::new();
-            re.set_error(String::from("Unrecognized request"));
-            response.set_exception(re)
+    /// Creates a new instance of [`Server`](struct.Server.html)
+    #[inline]
+    pub fn new(consensus: C, mempool: M, info: I) -> Self {
+        Self {
+            consensus: Arc::new(consensus),
+            mempool: Arc::new(mempool),
+            info: Arc::new(info),
+            consensus_state: Arc::new(Mutex::new(ConsensusState::default())),
         }
     }
+
+    /// Starts ABCI server
+    ///
+    /// # Note
+    ///
+    /// This is an `async` function and returns a `Future`. So, you'll need an executor to drive the `Future` returned
+    /// from this function. `async-std` and `tokio` are two popular options.
+    pub async fn run<T>(&self, addr: T) -> Result<()>
+    where
+        T: Into<Address>,
+    {
+        let addr = addr.into();
+
+        match addr {
+            Address::Tcp(addr) => {
+                #[cfg(feature = "async-std")]
+                let listener = TcpListener::bind(addr).await?;
+
+                #[cfg(feature = "tokio")]
+                let mut listener = TcpListener::bind(addr).await?;
+
+                log::info!("Started ABCI server at {}", addr);
+
+                let mut incoming = listener.incoming();
+
+                while let Some(stream) = incoming.next().await {
+                    self.handle_connection(stream?).await;
+                }
+            }
+            #[cfg(unix)]
+            Address::Uds(path) => {
+                #[cfg(feature = "async-std")]
+                let listener = UnixListener::bind(&path).await?;
+
+                #[cfg(feature = "tokio")]
+                let mut listener = UnixListener::bind(&path)?;
+
+                log::info!("Started ABCI server at {}", path.display());
+
+                let mut incoming = listener.incoming();
+
+                while let Some(stream) = incoming.next().await {
+                    self.handle_connection(stream?).await;
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    async fn handle_connection<S>(&self, mut stream: S)
+    where
+        S: Read + Write + Send + Unpin + 'static,
+    {
+        let consensus = self.consensus.clone();
+        let mempool = self.mempool.clone();
+        let info = self.info.clone();
+        let consensus_state = self.consensus_state.clone();
+
+        spawn(async move {
+            while let Ok(request) = decode(&mut stream).await {
+                match request {
+                    Some(request) => {
+                        let response = process(
+                            consensus.clone(),
+                            mempool.clone(),
+                            info.clone(),
+                            consensus_state.clone(),
+                            request,
+                        )
+                        .await;
+
+                        if let Err(err) = encode(response, &mut stream).await {
+                            log::error!("Error while writing to stream: {}", err);
+                        }
+                    }
+                    None => log::debug!("Received empty request"),
+                }
+            }
+
+            log::error!("Error while receiving ABCI request from socket");
+        });
+    }
+}
+
+async fn process<C, M, I>(
+    consensus: Arc<C>,
+    mempool: Arc<M>,
+    info: Arc<I>,
+    consensus_state: Arc<Mutex<ConsensusState>>,
+    request: Request,
+) -> Response
+where
+    C: Consensus + 'static,
+    M: Mempool + 'static,
+    I: Info + 'static,
+{
+    log::debug!("Received request: {:?}", request);
+
+    let value = match request.value.unwrap() {
+        Request_oneof_value::echo(request) => {
+            let mut response = ResponseEcho::new();
+            response.message = info.echo(request.message).await;
+            Response_oneof_value::echo(response)
+        }
+        Request_oneof_value::flush(_) => {
+            consensus.flush().await;
+            Response_oneof_value::flush(ResponseFlush::new())
+        }
+        Request_oneof_value::info(request) => {
+            Response_oneof_value::info(info.info(request.into()).await.into())
+        }
+        Request_oneof_value::set_option(request) => {
+            Response_oneof_value::set_option(info.set_option(request.into()).await.into())
+        }
+        Request_oneof_value::init_chain(request) => {
+            consensus_state
+                .lock()
+                .await
+                .validate(ConsensusState::InitChain);
+            Response_oneof_value::init_chain(consensus.init_chain(request.into()).await.into())
+        }
+        Request_oneof_value::query(request) => {
+            Response_oneof_value::query(info.query(request.into()).await.into())
+        }
+        Request_oneof_value::begin_block(request) => {
+            consensus_state
+                .lock()
+                .await
+                .validate(ConsensusState::BeginBlock);
+            Response_oneof_value::begin_block(consensus.begin_block(request.into()).await.into())
+        }
+        Request_oneof_value::check_tx(request) => {
+            Response_oneof_value::check_tx(mempool.check_tx(request.into()).await.into())
+        }
+        Request_oneof_value::deliver_tx(request) => {
+            consensus_state
+                .lock()
+                .await
+                .validate(ConsensusState::DeliverTx);
+            Response_oneof_value::deliver_tx(consensus.deliver_tx(request.into()).await.into())
+        }
+        Request_oneof_value::end_block(request) => {
+            consensus_state
+                .lock()
+                .await
+                .validate(ConsensusState::EndBlock);
+            Response_oneof_value::end_block(consensus.end_block(request.into()).await.into())
+        }
+        Request_oneof_value::commit(_) => {
+            consensus_state
+                .lock()
+                .await
+                .validate(ConsensusState::Commit);
+            Response_oneof_value::commit(consensus.commit().await.into())
+        }
+    };
+
+    let mut response = Response::new();
+    response.value = Some(value);
+
+    log::debug!("Sending response: {:?}", response);
+
     response
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum ConsensusState {
+    InitChain,
+    BeginBlock,
+    DeliverTx,
+    EndBlock,
+    Commit,
+}
+
+impl Default for ConsensusState {
+    #[inline]
+    fn default() -> Self {
+        ConsensusState::InitChain
+    }
+}
+
+impl ConsensusState {
+    pub fn validate(&mut self, mut next: ConsensusState) {
+        let is_valid = match (&self, next) {
+            (ConsensusState::InitChain, ConsensusState::InitChain) => true,
+            (ConsensusState::InitChain, ConsensusState::BeginBlock) => true,
+            (ConsensusState::BeginBlock, ConsensusState::DeliverTx) => true,
+            (ConsensusState::BeginBlock, ConsensusState::EndBlock) => true,
+            (ConsensusState::DeliverTx, ConsensusState::DeliverTx) => true,
+            (ConsensusState::DeliverTx, ConsensusState::EndBlock) => true,
+            (ConsensusState::EndBlock, ConsensusState::Commit) => true,
+            (ConsensusState::Commit, ConsensusState::BeginBlock) => true,
+            _ => false,
+        };
+
+        if is_valid {
+            std::mem::swap(self, &mut next);
+        } else {
+            panic!("{:?} cannot be called after {:?}", next, self);
+        }
+    }
+}
+
+/// Address of ABCI Server
+pub enum Address {
+    /// TCP Address
+    Tcp(SocketAddr),
+    /// UDS Address
+    #[cfg(unix)]
+    #[cfg_attr(feature = "doc", doc(cfg(unix)))]
+    Uds(PathBuf),
+}
+
+impl From<SocketAddr> for Address {
+    fn from(addr: SocketAddr) -> Self {
+        Self::Tcp(addr)
+    }
+}
+
+#[cfg(unix)]
+impl From<PathBuf> for Address {
+    fn from(path: PathBuf) -> Self {
+        Self::Uds(path)
+    }
 }

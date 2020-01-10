@@ -12,29 +12,41 @@ applications for [Tendermint](https://github.com/tendermint/tendermint/).
 
 ## Supported Version
 
-- Tendermint 0.32.7
-- ABCI 0.16.0
+- Tendermint 0.33.0
+- ABCI 0.16.1
 
-## Installation
+## Usage
 
-### Dependencies
-
-Make sure that you have Rust and Cargo installed. The easiest way is to follow the instructions on [rustup](https://rustup.rs/).
-
-To test the examples, please clone this repository.
-
-```
-git clone https://github.com/tendermint/rust-abci.git
-```
-
-The `empty_app` example, found under the `examples` folder, is a good demonstration/bare minimum foundation for a Rust ABCI app.
-
-To use this library to build your own ABCI apps in Rust you have to include the following in your `Cargo.toml` file.
+Add `abci` in your `Cargo.toml`'s `dependencies` section:
 
 ```toml
 [dependencies]
-abci = "0.6.4"
+abci = "0.7"
 ```
+
+Each ABCI application has to implement three core traits corresponding to all three ABCI connections, `Consensus`,
+`Mempool` and `Info`.
+
+> Note: Implementations of these traits are expected to be `Send + Sync` and methods take immutable reference of `self`.
+So, internal mutability must be handled using thread safe (`Arc`, `Mutex`, etc.) constructs.
+
+After implementing all three above mentioned `trait`s, you can create a `Server` object and use `Server::run()` to start
+ABCI application.
+
+`Server::run()` is an `async` function and returns a `Future`. So, you'll need an executor to drive `Future` returned
+from `Server::run()`. `async-std` and `tokio` are two popular options. In `counter` example, we use `tokio`'s executor.
+
+To know more, go to `examples/` to see a sample ABCI application.
+
+### Features
+
+- `tokio`: Enables `tokio` backend for running ABCI TCP/UDS server
+  - **Enabled** by default.
+- `async-std`: Enables `async-std` backend for running ABCI TCP/UDS server
+  - **Disabled** by default.
+
+> Features `tokio` and `async-std` are mutually exclusive, i.e., only one of them can be enabled at a time. Compilation
+will fail if either both of them are enabled or none of them are enabled.
 
 ### Development
 
@@ -50,9 +62,7 @@ To run either of the example apps you have to have Tendermint installed and init
 tendermint node
 ```
 
-After the node is online, you can run the `empty_app` example using `cargo run --example empty_app`.
-
-To run the `counter_app` run `cargo run --example counter_app` and send transaction to Tendermint via:
+After the node is online, you can run the `counter` example using `cargo run --example counter`.
 
 ```
 curl localhost:26657/broadcast_tx_commit?tx=0x01
@@ -65,6 +75,7 @@ For a real life example of an ABCI application you can checkout [Cosmos SDK](htt
 
 | Tendermint | Rust-abci |
 | ---------- | :-------: |
+| 0.33.0     |   0.7.0   |
 | 0.32.7     |   0.6.4   |
 | 0.31.7     |   0.5.4   |
 

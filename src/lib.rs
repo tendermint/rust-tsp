@@ -1,121 +1,73 @@
-//! # Tendermint ABCI library for Rust
+#![deny(missing_docs, unsafe_code)]
+//! A Rust crate for creating ABCI applications.
 //!
-//! This library provides an application Trait and TCP server for implementing Tendemint ABCI
-//! application in Rust.  The Application Trait provides default implementations for each callback
-//! to simplify development.
+//! ## ABCI Overview
 //!
-//! ## Example
+//! ABCI is the interface between Tendermint (a state-machine replication engine) and your application (the actual state
+//! machine). It consists of a set of methods, where each method has a corresponding `Request` and `Response` message type.
+//! Tendermint calls the ABCI methods on the ABCI application by sending the `Request` messages and receiving the `Response`
+//! messages in return.
 //!
-//! Here's a simple example that communicates with Tendermint. Defaults callbacks are handled by
-//! the Trait.  The app doesn't do any actual processing on a transaction.
+//! ABCI methods are split across 3 separate ABCI connections:
 //!
-//! ```rust,no_run
-//! struct EmptyApp;
+//! - `Consensus` Connection: `InitChain`, `BeginBlock`, `DeliverTx`, `EndBlock`, `Commit`
+//! - `Mempool` Connection: `CheckTx`
+//! - `Info` Connection: `Info`, `SetOption`, `Query`
 //!
-//! impl abci::Application for EmptyApp {}
+//! Additionally, there is a `Flush` method that is called on every connection, and an `Echo` method that is just for
+//! debugging.
 //!
-//! fn run_empty_app() {
-//!     abci::run_local(EmptyApp);
-//! }
-//!```
+//! To know more about ABCI protocol specifications, go to official ABCI [documentation](https://tendermint.com/docs/spec/abci/).
 //!
-extern crate byteorder;
-extern crate bytes;
-extern crate env_logger;
-extern crate futures;
-extern crate integer_encoding;
-#[macro_use]
-extern crate log;
-extern crate core;
-extern crate protobuf;
-extern crate tokio;
+//! ## Usage
+//!
+//! Add `abci` in your `Cargo.toml`'s `dependencies` section:
+//!
+//! ```toml
+//! [dependencies]
+//! abci = "0.7"
+//! ```
+//!
+//! Each ABCI application has to implement three core traits corresponding to all three ABCI connections, `Consensus`,
+//! `Mempool` and `Info`.
+//!
+//! > Note: Implementations of these traits are expected to be `Send + Sync` and methods take immutable reference of `self`.
+//! So, internal mutability must be handled using thread safe (`Arc`, `Mutex`, etc.) constructs.
+//!
+//! After implementing all three above mentioned `trait`s, you can create a `Server` object and use `Server::run()`to start
+//! ABCI application.
+//!
+//! `Server::run()` is an `async` function and returns a `Future`. So, you'll need an executor to drive `Future` returned
+//! from `Server::run()`. `async-std` and `tokio` are two popular options. In `counter` example, we use `tokio`'s executor.
+//!
+//! To know more, go to `examples/` to see a sample ABCI application.
+//!
+//! ### Features
+//!
+//! - `tokio`: Enables `tokio` backend for running ABCI TCP/UDS server
+//!   - **Enabled** by default.
+//! - `async-std`: Enables `async-std` backend for running ABCI TCP/UDS server
+//!   - **Disabled** by default.
+//!   
+//! > Note: Features `tokio` and `async-std` are mutually exclusive, i.e., only one of them can be enabled at a time. Compilation
+//! will fail if either both of them are enabled or none of them are enabled.
+#![cfg_attr(feature = "doc", feature(doc_cfg))]
 
-use std::net::SocketAddr;
+#[cfg(all(feature = "async-std", feature = "tokio"))]
+compile_error!("Features `async-std` and `tokio` are mutually exclusive");
 
-pub use crate::messages::abci::*;
-pub use crate::messages::merkle::*;
-pub use crate::messages::types::*;
-use crate::server::serve;
+#[cfg(not(any(feature = "async-std", feature = "tokio")))]
+compile_error!("Either feature `async-std` or `tokio` must be enabled for this crate");
 
-mod codec;
-mod messages;
+mod application;
+mod proto;
 mod server;
 
-/// Main Trait for an ABCI application. Provides generic responses for all callbacks
-/// Override desired callbacks as needed.  Tendermint makes 3 TCP connections to the
-/// application and does so in a synchonized manner.
-pub trait Application {
-    /// Query Connection: Called on startup from Tendermint.  The application should normally
-    /// return the last know state so Tendermint can determine if it needs to replay blocks
-    /// to the application.
-    fn info(&mut self, _req: &RequestInfo) -> ResponseInfo {
-        ResponseInfo::new()
-    }
+pub mod types;
 
-    /// Query Connection: Set options on the application (rarely used)
-    fn set_option(&mut self, _req: &RequestSetOption) -> ResponseSetOption {
-        ResponseSetOption::new()
-    }
+/// Utility macro for implementing [`Consensus`](trait.Consensus.html), [`Mempool`](trait.Mempool.html) and
+/// [`Info`](trait.Info.html) traits.
+pub use async_trait::async_trait;
 
-    /// Query Connection: Query your application. This usually resolves through a merkle tree holding
-    /// the state of the app.
-    fn query(&mut self, _req: &RequestQuery) -> ResponseQuery {
-        ResponseQuery::new()
-    }
-
-    /// Mempool Connection:  Used to validate incoming transactions.  If the application reponds
-    /// with a non-zero value, the transaction is added to Tendermint's mempool for processing
-    /// on the deliver_tx call below.
-    fn check_tx(&mut self, _req: &RequestCheckTx) -> ResponseCheckTx {
-        ResponseCheckTx::new()
-    }
-
-    /// Consensus Connection:  Called once on startup. Usually used to establish initial (genesis)
-    /// state.
-    fn init_chain(&mut self, _req: &RequestInitChain) -> ResponseInitChain {
-        ResponseInitChain::new()
-    }
-
-    /// Consensus Connection: Called at the start of processing a block of transactions
-    /// The flow is:
-    /// begin_block()
-    ///   deliver_tx()  for each transaction in the block
-    /// end_block()
-    /// commit()
-    fn begin_block(&mut self, _req: &RequestBeginBlock) -> ResponseBeginBlock {
-        ResponseBeginBlock::new()
-    }
-
-    /// Consensus Connection: Actually processing the transaction, performing some form of a
-    /// state transistion.
-    fn deliver_tx(&mut self, _p: &RequestDeliverTx) -> ResponseDeliverTx {
-        ResponseDeliverTx::new()
-    }
-
-    /// Consensus Connection: Called at the end of the block.  Often used to update the validator set.
-    fn end_block(&mut self, _req: &RequestEndBlock) -> ResponseEndBlock {
-        ResponseEndBlock::new()
-    }
-
-    /// Consensus Connection: Commit the block with the latest state from the application.
-    fn commit(&mut self, _req: &RequestCommit) -> ResponseCommit {
-        ResponseCommit::new()
-    }
-}
-
-/// Setup the app and start the server using localhost and default tendermint port 26658
-pub fn run_local<A>(app: A)
-where
-    A: Application + 'static + Send + Sync,
-{
-    let addr = "127.0.0.1:26658".parse().unwrap();
-    run(addr, app);
-}
-
-/// Setup the application and start the server. Use this fn when setting different ip:port.
-pub fn run<A>(listen_addr: SocketAddr, app: A)
-where
-    A: Application + 'static + Send + Sync,
-{
-    serve(app, listen_addr).unwrap();
-}
+pub use self::application::{Consensus, Info, Mempool};
+pub use self::server::{Address, Server};
