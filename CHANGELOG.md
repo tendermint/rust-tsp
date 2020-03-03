@@ -1,5 +1,14 @@
 # CHANGELOG
 
+_March 3, 2020_
+
+## v0.7.0
+
+### BREAKING CHANGES:
+
+- [\#116](https://github.com/tendermint/rust-abci/pull/116): Tendermint 0.33.\*'s ABCI compatibility
+
+
 _January 2, 2020_
 
 Special thanks to external contributors on this release: @devashishdxt
