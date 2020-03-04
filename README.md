@@ -12,7 +12,7 @@ applications for [Tendermint](https://github.com/tendermint/tendermint/).
 
 ## Supported Version
 
-- Tendermint 0.33.0
+- Tendermint 0.33.1
 - ABCI 0.16.1
 
 ## Usage
@@ -21,7 +21,7 @@ Add `abci` in your `Cargo.toml`'s `dependencies` section:
 
 ```toml
 [dependencies]
-abci = "0.7"
+abci = "0.8"
 ```
 
 Each ABCI application has to implement three core traits corresponding to all three ABCI connections, `Consensus`,
@@ -75,8 +75,8 @@ For a real life example of an ABCI application you can checkout [Cosmos SDK](htt
 
 | Tendermint | Rust-abci |
 | ---------- | :-------: |
-| 0.33.0     |   0.7.0   |
-| 0.32.7     |   0.6.4   |
+| 0.33.1     |   0.7.0   |
+| 0.32.9     |   0.6.5   |
 | 0.31.7     |   0.5.4   |
 
 ## Documentation

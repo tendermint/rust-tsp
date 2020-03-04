@@ -5,8 +5,8 @@ fn main() {
         out_dir: "src/proto",
         input: &[
             "protobuf/abci.proto",
-            "protobuf/github.com/tendermint/tendermint/libs/kv/types.proto",
-            "protobuf/github.com/tendermint/tendermint/crypto/merkle/merkle.proto",
+            "protobuf/libs/kv/types.proto",
+            "protobuf/crypto/merkle/merkle.proto",
         ],
         includes: &["protobuf"],
         customize: protobuf_codegen_pure::Customize {

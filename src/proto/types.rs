@@ -17,7 +17,7 @@
 #![allow(unsafe_code)]
 #![allow(unused_imports)]
 #![allow(unused_results)]
-//! Generated file from `github.com/tendermint/tendermint/libs/kv/types.proto`
+//! Generated file from `libs/kv/types.proto`
 
 use protobuf::Message as Message_imported_for_functions;
 use protobuf::ProtobufEnum as ProtobufEnum_imported_for_functions;
@@ -442,12 +442,12 @@ impl ::protobuf::reflect::ProtobufValue for KI64Pair {
 }
 
 static file_descriptor_proto_data: &'static [u8] = b"\
-    \n4github.com/tendermint/tendermint/libs/kv/types.proto\x12\x12tendermin\
-    t.libs.kv\"(\n\x04Pair\x12\r\n\x03key\x18\x01\x20\x01(\x0cB\0\x12\x0f\n\
-    \x05value\x18\x02\x20\x01(\x0cB\0:\0\",\n\x08KI64Pair\x12\r\n\x03key\x18\
-    \x01\x20\x01(\x0cB\0\x12\x0f\n\x05value\x18\x02\x20\x01(\x03B\0:\0B\x1c\
-    \xc0\xe3\x1e\x01\xf8\xe1\x1e\x01\xe0\xe2\x1e\x01\xc8\xe2\x1e\x01\xd0\xe2\
-    \x1e\x01\xa8\xe2\x1e\x01\xb8\xe2\x1e\x01b\x06proto3\
+    \n\x13libs/kv/types.proto\x12\x12tendermint.libs.kv\"(\n\x04Pair\x12\r\n\
+    \x03key\x18\x01\x20\x01(\x0cB\0\x12\x0f\n\x05value\x18\x02\x20\x01(\x0cB\
+    \0:\0\",\n\x08KI64Pair\x12\r\n\x03key\x18\x01\x20\x01(\x0cB\0\x12\x0f\n\
+    \x05value\x18\x02\x20\x01(\x03B\0:\0B\x1c\xc0\xe3\x1e\x01\xc8\xe2\x1e\
+    \x01\xf8\xe1\x1e\x01\xd0\xe2\x1e\x01\xa8\xe2\x1e\x01\xb8\xe2\x1e\x01\xe0\
+    \xe2\x1e\x01b\x06proto3\
 ";
 
 static mut file_descriptor_proto_lazy: ::protobuf::lazy::Lazy<::protobuf::descriptor::FileDescriptorProto> = ::protobuf::lazy::Lazy {

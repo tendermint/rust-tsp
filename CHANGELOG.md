@@ -1,15 +1,23 @@
 # CHANGELOG
 
-_January 24, 2020_
+_TBD_
 
-## v0.7.0
+## v0.8.0
 
 - Restructures `abci` to use latest `async`/`await` functionality (new design is based on https://github.com/devashishdxt/abci-rs,
   read documentation for more information)
-- Updates minimum supported tendermint version to `v0.33.0`
 - [Issue #30](https://github.com/tendermint/rust-abci/issues/30): Adds support for unix sockets
 - [Issue #107](https://github.com/tendermint/rust-abci/issues/107): Updates `tokio` to `v0.2`
 - Adds support for `async-std` executor to drive `Future`s.
+
+_March 3, 2020_
+
+## v0.7.0
+
+### BREAKING CHANGES:
+
+- [\#116](https://github.com/tendermint/rust-abci/pull/116): Tendermint 0.33.\*'s ABCI compatibility
+
 
 _January 2, 2020_
 

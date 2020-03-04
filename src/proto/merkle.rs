@@ -17,7 +17,7 @@
 #![allow(unsafe_code)]
 #![allow(unused_imports)]
 #![allow(unused_results)]
-//! Generated file from `github.com/tendermint/tendermint/crypto/merkle/merkle.proto`
+//! Generated file from `crypto/merkle/merkle.proto`
 
 use protobuf::Message as Message_imported_for_functions;
 use protobuf::ProtobufEnum as ProtobufEnum_imported_for_functions;
@@ -456,13 +456,12 @@ impl ::protobuf::reflect::ProtobufValue for Proof {
 }
 
 static file_descriptor_proto_data: &'static [u8] = b"\
-    \n;github.com/tendermint/tendermint/crypto/merkle/merkle.proto\x12\x18te\
-    ndermint.crypto.merkle\":\n\x07ProofOp\x12\x0e\n\x04type\x18\x01\x20\x01\
-    (\tB\0\x12\r\n\x03key\x18\x02\x20\x01(\x0cB\0\x12\x0e\n\x04data\x18\x03\
-    \x20\x01(\x0cB\0:\0\"?\n\x05Proof\x124\n\x03ops\x18\x01\x20\x03(\x0b2!.t\
-    endermint.crypto.merkle.ProofOpB\x04\xc8\xde\x1f\0:\0B\x14\xd0\xe2\x1e\
-    \x01\xe0\xe2\x1e\x01\xf8\xe1\x1e\x01\xc8\xe2\x1e\x01\xa8\xe2\x1e\x01b\
-    \x06proto3\
+    \n\x1acrypto/merkle/merkle.proto\x12\x18tendermint.crypto.merkle\":\n\
+    \x07ProofOp\x12\x0e\n\x04type\x18\x01\x20\x01(\tB\0\x12\r\n\x03key\x18\
+    \x02\x20\x01(\x0cB\0\x12\x0e\n\x04data\x18\x03\x20\x01(\x0cB\0:\0\"?\n\
+    \x05Proof\x124\n\x03ops\x18\x01\x20\x03(\x0b2!.tendermint.crypto.merkle.\
+    ProofOpB\x04\xc8\xde\x1f\0:\0B\x14\xa8\xe2\x1e\x01\xd0\xe2\x1e\x01\xe0\
+    \xe2\x1e\x01\xc8\xe2\x1e\x01\xf8\xe1\x1e\x01b\x06proto3\
 ";
 
 static mut file_descriptor_proto_lazy: ::protobuf::lazy::Lazy<::protobuf::descriptor::FileDescriptorProto> = ::protobuf::lazy::Lazy {
