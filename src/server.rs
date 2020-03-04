@@ -48,13 +48,22 @@ where
     I: Info + 'static,
 {
     /// Creates a new instance of [`Server`](struct.Server.html)
-    #[inline]
-    pub fn new(consensus: C, mempool: M, info: I) -> Self {
+    ///
+    /// # Note
+    ///
+    /// Set `is_initialized` to `true` if your application is already initialized by `init_chain`, `false` otherwise.
+    pub fn new(consensus: C, mempool: M, info: I, is_initialized: bool) -> Self {
+        let consensus_state = if is_initialized {
+            ConsensusState::Initialized
+        } else {
+            ConsensusState::NotInitialized
+        };
+
         Self {
             consensus: Arc::new(consensus),
             mempool: Arc::new(mempool),
             info: Arc::new(info),
-            consensus_state: Arc::new(Mutex::new(ConsensusState::default())),
+            consensus_state: Arc::new(Mutex::new(consensus_state)),
         }
     }
 
@@ -225,6 +234,8 @@ where
 
 #[derive(Debug, Clone, Copy)]
 pub enum ConsensusState {
+    NotInitialized,
+    Initialized,
     InitChain,
     BeginBlock,
     DeliverTx,
@@ -232,17 +243,11 @@ pub enum ConsensusState {
     Commit,
 }
 
-impl Default for ConsensusState {
-    #[inline]
-    fn default() -> Self {
-        ConsensusState::InitChain
-    }
-}
-
 impl ConsensusState {
-    pub fn validate(&mut self, mut next: ConsensusState) {
-        let is_valid = match (&self, next) {
-            (ConsensusState::InitChain, ConsensusState::InitChain) => true,
+    pub fn validate(&mut self, next: ConsensusState) {
+        let is_valid = match (*self, next) {
+            (ConsensusState::NotInitialized, ConsensusState::InitChain) => true,
+            (ConsensusState::Initialized, ConsensusState::BeginBlock) => true,
             (ConsensusState::InitChain, ConsensusState::BeginBlock) => true,
             (ConsensusState::BeginBlock, ConsensusState::DeliverTx) => true,
             (ConsensusState::BeginBlock, ConsensusState::EndBlock) => true,
@@ -254,7 +259,7 @@ impl ConsensusState {
         };
 
         if is_valid {
-            std::mem::swap(self, &mut next);
+            *self = next;
         } else {
             panic!("{:?} cannot be called after {:?}", next, self);
         }
