@@ -3,7 +3,6 @@ use std::ops::DerefMut;
 use std::sync::{Arc, Mutex};
 
 use env_logger::Env;
-use tokio;
 use tokio::codec::Decoder;
 use tokio::io;
 use tokio::net::TcpListener;
@@ -42,7 +41,7 @@ where
                 debug!("Return Response! {:?}", response);
                 writer.send(response)
             });
-            tokio::spawn(writes.then(|_| Ok(())))
+            tokio::spawn(writes.then(|x| x.map_err(|_| ()).map(|_| ())))
         });
 
     let mut rt = runtime::Builder::new()
