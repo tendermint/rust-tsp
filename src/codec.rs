@@ -2,7 +2,7 @@ use std::error::Error;
 
 use bytes::{BufMut, BytesMut};
 use integer_encoding::VarInt;
-use protobuf::Message;
+use protobuf::{error::WireError, Message, ProtobufError};
 use tokio::codec::{Decoder, Encoder};
 
 use crate::messages::abci::*;
@@ -25,7 +25,8 @@ impl Decoder for ABCICodec {
         if length == 0 {
             return Ok(None);
         }
-        let varint: (i64, usize) = i64::decode_var(&buf[..]);
+        let varint: (i64, usize) =
+            i64::decode_var(&buf[..]).ok_or(ProtobufError::WireError(WireError::UnexpectedEof))?;
         if varint.0 as usize + varint.1 > length {
             return Ok(None);
         }

@@ -15,7 +15,7 @@ include = ["src/**/*", "Cargo.toml"]
 bytes = "0.4"
 protobuf = "= 2.15.1"
 byteorder = "1.3.4"
-integer-encoding = "1.1.5"
+integer-encoding = { git = "https://github.com/yihuang/integer-encoding-rs.git", branch = "issue9" }
 log = "0.4.8"
 env_logger = "0.7.1"
 tokio = { version = "0.1", default-features = false, features = ["codec", "io", "tcp", "rt-full"] }
