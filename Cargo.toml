@@ -22,4 +22,4 @@ tokio = { version = "0.1", default-features = false, features = ["codec", "io", 
 futures = "0.3"
 
 [build-dependencies]
-protobuf-codegen-pure = "= 2.15.1"
+protobuf-codegen-pure = "= 2.16.2"
