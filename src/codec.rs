@@ -1,9 +1,7 @@
-use std::error::Error;
-
-use bytes::{BufMut, BytesMut};
+use bytes::{buf::BufMutExt, BufMut, BytesMut};
 use integer_encoding::VarInt;
-use protobuf::Message;
-use tokio::codec::{Decoder, Encoder};
+use protobuf::{Message, ProtobufError};
+use tokio_util::codec::{Decoder, Encoder};
 
 use crate::messages::abci::*;
 
@@ -18,9 +16,9 @@ impl ABCICodec {
 
 impl Decoder for ABCICodec {
     type Item = Request;
-    type Error = Box<dyn Error>;
+    type Error = ProtobufError;
 
-    fn decode(&mut self, buf: &mut BytesMut) -> Result<Option<Request>, Box<dyn Error>> {
+    fn decode(&mut self, buf: &mut BytesMut) -> Result<Option<Request>, ProtobufError> {
         let length = buf.len();
         if length == 0 {
             return Ok(None);
@@ -30,16 +28,15 @@ impl Decoder for ABCICodec {
             return Ok(None);
         }
         let request = protobuf::parse_from_bytes(&buf[varint.1..(varint.0 as usize + varint.1)])?;
-        buf.split_to(varint.0 as usize + varint.1);
+        let _ = buf.split_to(varint.0 as usize + varint.1);
         Ok(Some(request))
     }
 }
 
-impl Encoder for ABCICodec {
-    type Item = Response;
-    type Error = Box<dyn Error>;
+impl Encoder<Response> for ABCICodec {
+    type Error = ProtobufError;
 
-    fn encode(&mut self, msg: Response, buf: &mut BytesMut) -> Result<(), Box<dyn Error>> {
+    fn encode(&mut self, msg: Response, buf: &mut BytesMut) -> Result<(), ProtobufError> {
         let msg_len = msg.compute_size();
         let varint = i64::encode_var_vec(i64::from(msg_len));
 
@@ -49,7 +46,7 @@ impl Encoder for ABCICodec {
             buf.reserve(needed);
         }
 
-        buf.put(&varint);
+        buf.put(varint.as_ref());
         msg.write_to_writer(&mut buf.writer())?;
         trace!("Encode response! {:?}", &buf[..]);
         Ok(())
@@ -59,9 +56,10 @@ impl Encoder for ABCICodec {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::error::Error;
 
     fn setup_echo_request_buf() -> Result<BytesMut, Box<dyn Error>> {
-        let buf = &mut BytesMut::new();
+        let mut buf = BytesMut::new();
 
         let mut r = Request::new();
         let mut echo = RequestEcho::new();
@@ -70,16 +68,16 @@ mod tests {
 
         let msg_len = r.compute_size();
         let varint = i64::encode_var_vec(msg_len as i64);
-        buf.put(varint);
-        r.write_to_writer(&mut buf.writer())?;
+        buf.put(varint.as_ref());
+        r.write_to_writer(&mut (&mut buf).writer())?;
 
         trace!("Encode response! {:?}", &buf[..]);
 
-        Ok(buf.take())
+        Ok(buf)
     }
 
     fn setup_echo_large_request_buf() -> Result<BytesMut, Box<dyn Error>> {
-        let buf = &mut BytesMut::new();
+        let mut buf = BytesMut::new();
 
         let mut r = Request::new();
         let mut echo = RequestEcho::new();
@@ -96,12 +94,12 @@ mod tests {
             buf.reserve(needed);
         }
 
-        buf.put(varint);
-        r.write_to_writer(&mut buf.writer())?;
+        buf.put(varint.as_ref());
+        r.write_to_writer(&mut (&mut buf).writer())?;
 
         trace!("Encode response! {:?}", &buf[..]);
 
-        Ok(buf.take())
+        Ok(buf)
     }
 
     #[test]

@@ -1,5 +1,5 @@
 # Origin
-version_branch = v0.33.5
+version_branch = v0.33.6
 tendermint = https://raw.githubusercontent.com/tendermint/tendermint/$(version_branch)
 
 # Outputs

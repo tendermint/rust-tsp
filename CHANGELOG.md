@@ -1,5 +1,13 @@
 # CHANGELOG
 
+_July 23, 2020_
+
+## v0.7.2
+
+### IMPROVEMENTS:
+
+- [\#138](https://github.com/tendermint/rust-abci/pull/138): dependencies upgrades (protobuf to 2.16.2, tokio to 0.2, bytes to 0.5)
+
 _June 30, 2020_
 
 ## v0.7.1

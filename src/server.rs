@@ -1,65 +1,82 @@
 use std::net::SocketAddr;
 use std::ops::DerefMut;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use env_logger::Env;
-use tokio::codec::Decoder;
-use tokio::io;
+use futures::sink::SinkExt;
+use futures::stream::StreamExt;
 use tokio::net::TcpListener;
-use tokio::prelude::*;
 use tokio::runtime;
+use tokio::sync::Mutex;
+use tokio_util::codec::Decoder;
 
 use crate::codec::ABCICodec;
 use crate::messages::abci::*;
 use crate::Application;
 
+async fn serve_async<A>(app: A, addr: SocketAddr)
+where
+    A: Application + 'static + Send + Sync,
+{
+    let app = Arc::new(Mutex::new(app));
+    let mut listener = TcpListener::bind(&addr).await.unwrap();
+    while let Some(Ok(socket)) = listener.next().await {
+        let app_instance = app.clone();
+        tokio::spawn(async move {
+            info!("Got connection! {:?}", socket);
+            let framed = ABCICodec::new().framed(socket);
+            let (mut writer, mut reader) = framed.split();
+            let mut mrequest = reader.next().await;
+            while let Some(Ok(ref request)) = mrequest {
+                debug!("Got Request! {:?}", request);
+                let response = respond(&app_instance, request).await;
+                debug!("Return Response! {:?}", response);
+                writer.send(response).await.expect("sending back response");
+                mrequest = reader.next().await;
+            }
+            match mrequest {
+                None => {
+                    panic!("connection dropped");
+                }
+                Some(Err(e)) => {
+                    panic!("decoding error: {:?}", e);
+                }
+                _ => {
+                    unreachable!();
+                }
+            }
+        });
+    }
+}
+
 /// Creates the TCP server and listens for connections from Tendermint
-pub fn serve<A>(app: A, addr: SocketAddr) -> io::Result<()>
+pub fn serve<A>(app: A, addr: SocketAddr) -> std::io::Result<()>
 where
     A: Application + 'static + Send + Sync,
 {
     env_logger::from_env(Env::default().default_filter_or("info"))
         .try_init()
         .ok();
-    let listener = TcpListener::bind(&addr).unwrap();
-    let incoming = listener.incoming();
-    let app = Arc::new(Mutex::new(app));
-    let server = incoming
-        .map_err(|err| panic!("Connection failed: {}", err))
-        .for_each(move |socket| {
-            info!("Got connection! {:?}", socket);
-            let framed = ABCICodec::new().framed(socket);
-            let (_writer, reader) = framed.split();
-            let app_instance = Arc::clone(&app);
-
-            let responses = reader.map(move |request| {
-                debug!("Got Request! {:?}", request);
-                respond(&app_instance, &request)
-            });
-
-            let writes = responses.fold(_writer, |writer, response| {
-                debug!("Return Response! {:?}", response);
-                writer.send(response)
-            });
-            tokio::spawn(writes.then(|x| x.map_err(|_| ()).map(|_| ())))
-        });
 
     let mut rt = runtime::Builder::new()
-        .panic_handler(|_err| {
-            std::process::exit(1);
-            // std::panic::resume_unwind(err);
-        })
+        .basic_scheduler()
+        .enable_io()
         .build()
         .unwrap();
-    rt.block_on(server).unwrap();
+    let default_hook = std::panic::take_hook();
+    std::panic::set_hook(Box::new(move |info| {
+        default_hook(info);
+        std::process::exit(1);
+    }));
+    rt.block_on(serve_async(app, addr));
     Ok(())
 }
 
-fn respond<A>(app: &Arc<Mutex<A>>, request: &Request) -> Response
+async fn respond<A>(app: &Arc<Mutex<A>>, request: &Request) -> Response
 where
     A: Application + 'static + Send + Sync,
 {
-    let mut guard = app.lock().unwrap();
+    let mut guard = app.lock().await;
     let app = guard.deref_mut();
 
     let mut response = Response::new();
